@@ -3,7 +3,19 @@
 # - camera position in N levels (maybe 10)
 
 import bpy
-import math
+from math import radians
+
+import sys
+import os
+
+blend_dir = os.path.dirname(bpy.data.filepath)
+if blend_dir not in sys.path:
+   sys.path.append(blend_dir)
+
+import data_gen
+import importlib
+
+importlib.reload(data_gen)
 
 
 # remove cube object
@@ -28,7 +40,24 @@ camera = bpy.data.objects['Camera']
 
 path = '/media/henistein/Novo volume/SyntheticData'
 
+dg = data_gen.CreateData(bpy, path)
 
+# add obj
+dg.add_obj('camera', camera)
+# rotation
+dg.add_feature("rotation_euler.x", 90, 100, 2, radians)
+dg.add_feature("rotation_euler.y", -180, 180, 36, radians)
+dg.add_feature("rotation_euler.z", 80, 100, 5, radians)
+# location
+dg.add_feature("location.x", 5, 25, 4)
+dg.add_feature("location.y", -0.5, 0.5, 0.2)
+dg.add_feature("location.z", -0.5, 0.5, 0.2)
+
+dg.generate(1000)
+dg.create_data()
+
+
+"""
 i = 0
 for rx in range(90, 100, 2):
   for ry in range(-180, 180, 36):
@@ -49,3 +78,4 @@ for rx in range(90, 100, 2):
             if i % 1000 == 0:
               print(f'{i}/25000')
             i += 1
+"""
