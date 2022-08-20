@@ -19,7 +19,7 @@ class Dataset(data.Dataset):
     self.test_data = all_data_paths[int(train_amt*len(all_data_paths)):]
     self.train = train
     self.transform = transforms.Compose([
-      transforms.Resize(380),
+      transforms.Resize(224),
       transforms.ToTensor(),
       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
@@ -41,11 +41,11 @@ class Dataset(data.Dataset):
     img = self.transform(img)
     return img, target
 
-def load_dataset():
+def load_dataset(bs):
   dataset = Dataset(
     '/media/henistein/Novo volume/SyntheticData',
   )
-  return data.DataLoader(dataset, batch_size=10, shuffle=True)
+  return data.DataLoader(dataset, batch_size=bs, shuffle=True)
 
 
 if __name__ == '__main__':
