@@ -24,12 +24,6 @@ class Dataset(data.Dataset):
       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
-  def train(self):
-    self.train = True
-
-  def test(self):
-    self.train = False
-
   def __len__(self):
     return len(self.train_data) if self.train else len(self.test_data)
 
@@ -41,12 +35,31 @@ class Dataset(data.Dataset):
     img = self.transform(img)
     return img, target
 
-def load_dataset(bs):
+def load_train_dataset(bs):
   dataset = Dataset(
     '/media/henistein/Novo volume/SyntheticData',
   )
   return data.DataLoader(dataset, batch_size=bs, shuffle=True)
 
+def load_val_dataset(bs):
+  dataset = Dataset(
+    '/media/henistein/Novo volume/SyntheticData',
+    train=False
+  )
+  return data.DataLoader(dataset, batch_size=bs, shuffle=True)
 
+
+from tqdm import tqdm
 if __name__ == '__main__':
-  load_dataset()
+  BS = 2
+  dataset = load_train_dataset(BS)
+
+  # save preprocessed dataset to pickle file
+  """
+  with open('dataset.pkl', 'wb') as f:
+    for img, target in tqdm(dataset):
+      pickle.dump((img, target), f)
+  """
+
+  for _ in tqdm(dataset):
+    pass
