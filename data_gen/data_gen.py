@@ -65,6 +65,8 @@ class DataGen:
     decimals = 1
     while int(str(step*decimals).split('.')[0]) == 0: decimals *= 10
     lst = list(range(*tuple(map(lambda x: int(x*decimals), frm_to_step))))
+    # recover decimal places
+    lst = list(map(lambda x: x/decimals, lst))
     lst = list(map(callback, lst))
     shuffle(lst)
     return lst

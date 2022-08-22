@@ -53,11 +53,6 @@ bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
 bpy.ops.object.constraint_add(type='FOLLOW_PATH')
 bpy.data.objects['Empty'].constraints['Follow Path'].target = bpy.data.objects['BezierCircle']
 
-# change offset of empty
-bpy.data.objects['Empty'].constraints['Follow Path'].offset = 0.5
-
-
-
 
 if 1 == 1:
   path = '/media/henistein/Novo volume/SyntheticData/teste'
@@ -67,34 +62,23 @@ if 1 == 1:
   # add empty obj
   dg.add_obj('empty', bpy.data.objects['Empty'])
   # offset
-  dg.add_feature("constraints,Follow Path,offset", 0, 10, 1)
-  dg.generate(10)
-  dg.create_data()
-  exit(0)
-
-
-
-
-
-
-
-
-
-
-
-
-
+  dg.add_feature("constraints,Follow Path,offset", 4, 46, 3)
+  # influence
+  dg.add_feature("constraints,Follow Path,influence", 0.25, 1.0, 0.05)
+  # add stop obj
   dg.add_obj('stop_sign', stop_sign)
+  # location
+  dg.add_feature("location.x", -40, 0, 4)
+  dg.add_feature("location.y", -20, 20, 4)
+  dg.add_feature("location.z", -10, 10, 2)
+
+  dg.generate(200)
+  dg.create_data()
+
+
+  """
   # rotation
   dg.add_feature("rotation_euler.x", -180, 180, 10, radians)
   dg.add_feature("rotation_euler.y", -40, 40, 10, radians)
   dg.add_feature("rotation_euler.z", -70, 70, 10, radians)
-  # location
   """
-  dg.add_feature("location.x", -37, 7, 2)
-  dg.add_feature("location.y", -3.5, 3.5, 0.7)
-  dg.add_feature("location.z", -1.7, 1.7, 0.34)
-  """
-
-  dg.generate(1000)
-  dg.create_data()
