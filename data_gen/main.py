@@ -58,8 +58,8 @@ bpy.ops.object.constraint_add(type='FOLLOW_PATH')
 bpy.data.objects['Empty'].constraints['Follow Path'].target = bpy.data.objects['BezierCircle']
 
 
+"""
 # Day night cycle
-
 # 1 - Change render engine to cycles and device set to GPU
 bpy.data.scenes[0].render.engine = "CYCLES"
 bpy.context.scene.cycles.device = "GPU"
@@ -84,41 +84,56 @@ bpy.context.scene.sun_pos_properties.co_parser = "38.691629133197814, -9.2159228
 bpy.context.scene.sun_pos_properties.month = 6
 bpy.context.scene.sun_pos_properties.day = 20
 
+# day night cycle
+dg.add_obj("scene", bpy.context.scene)
+dg.add_feature("sun_pos_properties.time", 5, 20, 1)
+"""
+
 # Reduce samples (faster rendering)
 bpy.context.scene.cycles.samples = 1024
 
+# background
+C = bpy.context
+scn = C.scene
+# Get the environment node tree of the current scene
+node_tree = scn.world.node_tree
+tree_nodes = node_tree.nodes
+# Clear all nodes
+tree_nodes.clear()
+# Add Background node
+node_background = tree_nodes.new(type='ShaderNodeBackground')
+# Add Environment Texture node
+node_environment = tree_nodes.new('ShaderNodeTexEnvironment')
+# Load and assign the image to the node property
+#node_environment.image = bpy.data.images.load("//hdri.exr") # Relative path
+node_environment.location = -300,0
+# Add Output node
+node_output = tree_nodes.new(type='ShaderNodeOutputWorld')   
+node_output.location = 200,0
+# Link all nodes
+links = node_tree.links
+link = links.new(node_environment.outputs["Color"], node_background.inputs["Color"])
+link = links.new(node_background.outputs["Background"], node_output.inputs["Surface"])
 
 
+if 0 == 1:
+   path = '/media/henistein/Novo volume/SyntheticData/teste'
 
-if 1 == 1:
-  path = '/media/henistein/Novo volume/SyntheticData/teste'
+   dg = data_gen.CreateData(bpy, path)
 
-  dg = data_gen.CreateData(bpy, path)
-
-  # add empty obj
-  dg.add_obj('empty', bpy.data.objects['Empty'])
-  # offset
-  dg.add_feature("constraints,Follow Path,offset", 4, 46, 3)
-  # influence
-  dg.add_feature("constraints,Follow Path,influence", 0.25, 1.0, 0.05)
-  # add stop obj
-  dg.add_obj('stop_sign', stop_sign)
-  # location
-  dg.add_feature("location.x", -40, 0, 4)
-  dg.add_feature("location.y", -20, 20, 4)
-  dg.add_feature("location.z", -10, 10, 2)
-  # day night cycle
-  dg.add_obj("scene", bpy.context.scene)
-  dg.add_feature("sun_pos_properties.time", 5, 20, 1)
+   # add empty obj
+   dg.add_obj('empty', bpy.data.objects['Empty'])
+   # offset
+   dg.add_feature("constraints,Follow Path,offset", 4, 46, 3)
+   # influence
+   dg.add_feature("constraints,Follow Path,influence", 0.25, 1.0, 0.05)
+   # add stop obj
+   dg.add_obj('stop_sign', stop_sign)
+   # location
+   dg.add_feature("location.x", -40, 0, 4)
+   dg.add_feature("location.y", -20, 20, 4)
+   dg.add_feature("location.z", -10, 10, 2)
 
 
-  dg.generate(200)
-  dg.create_data()
-
-
-  """
-  # rotation
-  dg.add_feature("rotation_euler.x", -180, 180, 10, radians)
-  dg.add_feature("rotation_euler.y", -40, 40, 10, radians)
-  dg.add_feature("rotation_euler.z", -70, 70, 10, radians)
-  """
+   dg.generate(200)
+   dg.create_data()
