@@ -60,6 +60,9 @@ class DataGen:
     s = ',' if ',' in atr else '.'
     self.objs[self.curr_obj].features[self.curr_obj+s+atr] = self.calculate_feature_list((frm, to, step), callback)
   
+  def add_elements(self, atr, elements):
+    self.objs[self.curr_obj].features[self.curr_obj+'.'+atr] = elements
+  
   def calculate_feature_list(self, frm_to_step, callback):
     _, _, step = frm_to_step 
     decimals = 1
@@ -101,10 +104,12 @@ class CreateData(DataGen):
           # is not a dict
           obj_name, atr = feature.split('.', 1)
           _setattr(self.objs[obj_name].obj, atr, value)
-        else:
+        elif ',' in feature:
           # is a dict
           obj_name, dict_, key, atr = feature.split(',')
           setattr(getattr(self.objs[obj_name].obj, dict_)[key], atr, value)
+        else:
+          setattr(self.objs[self.curr_obj], feature, value)
 
       # save image
       self.blender.context.scene.render.filepath = f'{self.destination_path}/img{str(1000000+i)[1:]}.png' 

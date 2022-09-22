@@ -3,6 +3,7 @@ from math import radians
 
 import sys
 import os
+import glob
 
 blend_dir = os.path.dirname(bpy.data.filepath)
 if blend_dir not in sys.path:
@@ -57,7 +58,6 @@ bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
 bpy.ops.object.constraint_add(type='FOLLOW_PATH')
 bpy.data.objects['Empty'].constraints['Follow Path'].target = bpy.data.objects['BezierCircle']
 
-
 """
 # Day night cycle
 # 1 - Change render engine to cycles and device set to GPU
@@ -105,7 +105,7 @@ node_background = tree_nodes.new(type='ShaderNodeBackground')
 # Add Environment Texture node
 node_environment = tree_nodes.new('ShaderNodeTexEnvironment')
 # Load and assign the image to the node property
-#node_environment.image = bpy.data.images.load("//hdri.exr") # Relative path
+#node_environment.image = bpy.data.images.load('backgrounds/solitude_night_4k.exr')
 node_environment.location = -300,0
 # Add Output node
 node_output = tree_nodes.new(type='ShaderNodeOutputWorld')   
@@ -117,23 +117,29 @@ link = links.new(node_background.outputs["Background"], node_output.inputs["Surf
 
 
 if 0 == 1:
-   path = '/media/henistein/Novo volume/SyntheticData/teste'
+   path = '/home/henistein/Downloads/teste'
 
    dg = data_gen.CreateData(bpy, path)
 
-   # add empty obj
+   # add empty obj (camera)
    dg.add_obj('empty', bpy.data.objects['Empty'])
    # offset
    dg.add_feature("constraints,Follow Path,offset", 4, 46, 3)
    # influence
    dg.add_feature("constraints,Follow Path,influence", 0.25, 1.0, 0.05)
+
+   """
    # add stop obj
    dg.add_obj('stop_sign', stop_sign)
    # location
    dg.add_feature("location.x", -40, 0, 4)
    dg.add_feature("location.y", -20, 20, 4)
    dg.add_feature("location.z", -10, 10, 2)
+   """
 
+   # add background object
+   dg.add_obj('node_environment', node_environment)
+   dg.add_elements('image', list(map(bpy.data.images.load, glob.glob('backgrounds/*'))))
 
-   dg.generate(200)
+   dg.generate(10)
    dg.create_data()
