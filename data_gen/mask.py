@@ -8,6 +8,7 @@
 from ctypes import pointer
 import bpy
 import bpy_extras
+from bpy_extras.object_utils import world_to_camera_view
 from mathutils import Vector
 import numpy as np
 import matplotlib.pyplot as plt
@@ -36,10 +37,6 @@ def _2d_to_pixel_coords(scene, co_2d):
 #vertes = [v.co for v in cube.data.vertices]
 #print(vert_coord_to_2d(vertes))
 #exit(0)
-
-# TODO hoje:
-# ((pixel coordinates), (3d coordinates))
-# find a way to just get the list of vertices that are being captured by the camera
 
 
 def get_vertices_coords(obj):
@@ -78,13 +75,48 @@ def visualize(matches):
 
 scene = bpy.context.scene
 cube = scene.objects.get("Cube")
+obj = cube
 
 matches = get_coordinates_matches(cube)
-# visualize(matches)
+scene = bpy.context.scene
+cam = bpy.data.objects['Camera']
+#cam_W, cam_H = 1920, 1080
+#vertices = [(vert[0]/1920, vert[1]/1080) for _,vert in matches]
+
+# Threshold to test if ray cast corresponds to the original vertex
+limit = 0.1
+
+vertices = [v for v,_ in matches]
+visible_vertices = []
+
+for i, v in enumerate(vertices):
+  # Get the 2D projection of the vertex
+  co2D = world_to_camera_view(scene, cam, v)
+
+  bpy.ops.mesh.primitive_cube_add(location=(v))
+  bpy.ops.transform.resize(value=(0.01, 0.01, 0.01))
+
+  # If inside the camera view
+  if 0.0 <= co2D.x <= 1.0 and 0.0 <= co2D.y <= 1.0 and co2D.z > 0:
+    # Try a ray cast, in order to test the vertex visibility from the camera
+    location = scene.ray_cast(
+      bpy.context.window.view_layer, cam.location, (v - cam.location).normalized())
+    # If the ray hits something and if this hit is close to the vertex, we assume this is the vertex
+    if location[0] and (v - location[1]).length < limit:
+      visible_vertices.append(obj.data.vertices[i])
+
+print(visible_vertices)
 
 
-# print(get_coordinates_matches(cube))
 
 # Neste momento o objetivo e fazer o Ground truth para que consiga corresponder uma imagem sintetica com o objeto 3d
 # Verificar a mesh do objeto para que consiga identificar corretamente cada regiao (por exemplo o objeto ser feito de cubinhos como um lego)
 # Adaptar o YOLO/SSD para que consiga fazer o match entre uma imagem e o objeto 3d
+
+# TODO hoje:
+# find a way to just get the list of vertices that are being captured by the camera
+# - frustum coordinates
+# - https://blenderartists.org/t/what-does-the-camera-see/1298780/6
+# make objectness
+# find a way to get smaller triangles or polygons
+# Nerf
