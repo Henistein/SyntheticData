@@ -10,8 +10,12 @@ if blend_dir not in sys.path:
    sys.path.append(blend_dir)
 
 import data_gen
+import match 
 import importlib
 importlib.reload(data_gen)
+importlib.reload(match)
+
+from bpy_extras.object_utils import world_to_camera_view
 
 # Choose Cycles and GPU
 #bpy.data.scenes[0].render.engine = "CYCLES"
@@ -115,6 +119,14 @@ links = node_tree.links
 link = links.new(node_environment.outputs["Color"], node_background.inputs["Color"])
 link = links.new(node_background.outputs["Background"], node_output.inputs["Surface"])
 
+# visible vertices
+bpy.context.view_layer.update()
+scene = bpy.context.scene
+cam = bpy.data.objects['Camera']
+matches = match.get_coordinates_matches(stop_sign, cam, scene)
+vertices, pixels = list(zip(*matches))
+
+match.visualize_vertices(pixels)
 
 if 0 == 1:
    path = '/home/henistein/Downloads/teste'
