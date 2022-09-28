@@ -54,25 +54,32 @@ def visualize_vertices(vertices, W=1920, H=1080):
 
 from tqdm import tqdm
 
-def filter_visible_vertices(vertices, cam, scene):
+def filter_visible_vertices(vertices, obj, cam, ctx):
   # Threshold to test if ray cast corresponds to the original vertex
   limit = 0.1
   visible_vertices = []
+  depsgraph = ctx.evaluated_depsgraph_get()
+  scene = ctx.scene
   for i, v in tqdm(enumerate(vertices), total=len(vertices)):
     # Get the 2D projection of the vertex
     co2D = world_to_camera_view(scene, cam, v)
 
     bpy.ops.mesh.primitive_cube_add(location=(v))
+    bpy.context.active_object.name = 'AuxCube'
     bpy.ops.transform.resize(value=(0.01, 0.01, 0.01))
 
     # If inside the camera view
     if 0.0 <= co2D.x <= 1.0 and 0.0 <= co2D.y <= 1.0 and co2D.z > 0:
       # Try a ray cast, in order to test the vertex visibility from the camera
       location = scene.ray_cast(
-        bpy.context.window.view_layer, cam.location, (v - cam.location).normalized())
+        depsgraph, cam.location, (v - cam.location).normalized())
       # If the ray hits something and if this hit is close to the vertex, we assume this is the vertex
       if location[0] and (v - location[1]).length < limit:
         visible_vertices.append(obj.data.vertices[i])
+
+    bpy.data.objects['AuxCube'].select_set(True)
+    bpy.ops.object.delete()
+
   return visible_vertices
 
 
@@ -97,6 +104,7 @@ if __name__ == '__main__':
   matches = get_coordinates_matches(cube, camera=cam, scene=scene)
   vertices, pixels = list(zip(*matches))
   #visualize_vertices(pixels)
+  visible_vertices = filter_visible_vertices(vertices, cube, cam, bpy.context)
 
 
 # Neste momento o objetivo e fazer o Ground truth para que consiga corresponder uma imagem sintetica com o objeto 3d
