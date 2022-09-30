@@ -119,21 +119,25 @@ links = node_tree.links
 link = links.new(node_environment.outputs["Color"], node_background.inputs["Color"])
 link = links.new(node_background.outputs["Background"], node_output.inputs["Surface"])
 
-# visible vertices
+# ---------------------------------------------------------------------------
+empty = bpy.data.objects['Empty']
+empty.constraints['Follow Path'].offset = 25
 bpy.context.view_layer.update()
+
+# visible vertices
+"""
 scene = bpy.context.scene
 cam = bpy.data.objects['Camera']
 matches = match.get_coordinates_matches(stop_sign, cam, scene)
 vertices, pixels = list(zip(*matches))
-
 match.visualize_vertices(pixels)
-# remove vertices that are out of camera view
-pixels = list(filter(lambda x: (x[0] >= 0 and x[0] <= 1920) and (x[1] >= 0 and x[1] <= 1080), pixels))
-# remove vertices that are not being captured by the camera (are behind)
-visible_vertices = match.filter_visible_vertices(vertices, stop_sign, cam, bpy.context)
+"""
 
-print(len(visible_vertices))
-print(visible_vertices)
+# remove vertices that are out of camera view
+#pixels = list(filter(lambda x: (x[0] >= 0 and x[0] <= 1920) and (x[1] >= 0 and x[1] <= 1080), pixels))
+# remove vertices that are not being captured by the camera (are behind)
+#visible_vertices = match.filter_visible_vertices(vertices, stop_sign, cam, bpy.context)
+#print(len(visible_vertices))
 
 if 0 == 1:
    path = '/home/henistein/Downloads/teste'

@@ -25,17 +25,6 @@ def _2d_to_pixel_coords(scene, co_2d):
 
 def get_vertices_coords(obj):
   return [Vector((v.x, v.y, v.z)) for v in [obj.matrix_world @ v.co for v in obj.data.vertices]]
-  """
-  local_vertices = [v.co for v in obj.data.vertices]
-  global_vertices = []
-
-  for v in local_vertices:
-    vec = [v[i]*obj.scale[i]+obj.location[i] for i in range(3)]
-    global_vertices.append(Vector(vec))
-
-  return global_vertices
-  """
-
 
 def get_coordinates_matches(obj, camera, scene):
   global_vertices = get_vertices_coords(obj)
@@ -54,13 +43,14 @@ def visualize_vertices(vertices, W=1920, H=1080):
 
 from tqdm import tqdm
 
-def filter_visible_vertices(vertices, obj, cam, ctx):
+def filter_visible_matches(matches, obj, cam, ctx):
   # Threshold to test if ray cast corresponds to the original vertex
   limit = 0.1
   visible_vertices = []
   depsgraph = ctx.evaluated_depsgraph_get()
   scene = ctx.scene
-  for i, v in tqdm(enumerate(vertices), total=len(vertices)):
+  for i, m in tqdm(enumerate(matches), total=len(matches)):
+    v,p = m
     # Get the 2D projection of the vertex
     co2D = world_to_camera_view(scene, cam, v)
 
@@ -75,7 +65,7 @@ def filter_visible_vertices(vertices, obj, cam, ctx):
         depsgraph, cam.location, (v - cam.location).normalized())
       # If the ray hits something and if this hit is close to the vertex, we assume this is the vertex
       if location[0] and (v - location[1]).length < limit:
-        visible_vertices.append(obj.data.vertices[i])
+        visible_vertices.append((obj.data.vertices[i], p))
 
     bpy.data.objects['AuxCube'].select_set(True)
     bpy.ops.object.delete()
@@ -90,8 +80,10 @@ def func():
   cam = scene.objects.get('Camera')
   cube = scene.objects.get("Cube")
   
-  cam.rotation_euler = (radians(90), radians(0), radians(90))
-  cam.location = (10,0,0)
+  #cam.rotation_euler = (radians(90), radians(0), radians(90))
+  #cam.location = (10,0,0)
+  cam.rotation_euler = (radians(53), radians(0), radians(46))
+  cam.location = (4, -4, 3.1)
 
   return scene, cam, cube
 
@@ -103,17 +95,44 @@ if __name__ == '__main__':
 
   matches = get_coordinates_matches(cube, camera=cam, scene=scene)
   vertices, pixels = list(zip(*matches))
+
+  visible_vertices = filter_visible_matches(matches, cube, cam, bpy.context)
+  vertices, pixels = list(zip(*visible_vertices))
+
+  """
+  edges = cube.edges
+  vertices_indexes = [i.index for i in vertices]
+  for e in edges:
+    verts = [v for v in e.vertices if v in vertices_indexes]
+    assert len(verts) == 1 or len(verts) == 2, "The Edge must have at least a vertice inside the camera view"
+    if len(verts) == 1: # the edge is not totally inside the camera view
+      # clip the edge and create a vertice that is inside the camera view
+  """
+
+
+
+
+    
+
+
+
+
+
+  #print(vertices)
   #visualize_vertices(pixels)
-  visible_vertices = filter_visible_vertices(vertices, cube, cam, bpy.context)
 
+  #vertices = [v.co for v in vertices]
+  #vertices = vert_coord_to_2d(visible_vertices, cam, scene)
+  #visible_vertices = [v.co for v in visible_vertices]
+  #visible_vertices = vert_coord_to_2d(visible_vertices, cam, scene)
 
-# Neste momento o objetivo e fazer o Ground truth para que consiga corresponder uma imagem sintetica com o objeto 3d
-# Verificar a mesh do objeto para que consiga identificar corretamente cada regiao (por exemplo o objeto ser feito de cubinhos como um lego)
-# Adaptar o YOLO/SSD para que consiga fazer o match entre uma imagem e o objeto 3d
+# TODO: 
+# https://i.imgur.com/bgl73j7.png
+# so if you create a plane object and align it to the camera view.
+# you could then parent it to the camera, in case you want to more easily move the camera around
+# - colocar o plano na perspetiva da camera a olho e depois fazer o parenting dos dois
 
-# TODO hoje:
-# try matching with stop_sing and fix bugs and optimize
-# find a way to get smaller triangles or polygons
-
-# make objectness
-# Nerf
+# then select the master object, go into edit mode, then ctrl+click on the cutting object (plane)
+# then from the camera PoV viewport mesh->knife project
+# this obviously would be translated to work in Python
+# but should be quite straightforward

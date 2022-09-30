@@ -1,0 +1,61 @@
+import bpy
+
+# remove and light cube object
+bpy.data.objects['Cube'].select_set(False)
+bpy.data.objects['Light'].select_set(True)
+bpy.ops.object.delete()
+
+# objects
+camera = bpy.data.objects['Camera']
+cube = bpy.data.objects['Cube']
+
+# reset rotation and location
+bpy.data.objects['Camera'].select_set(True)
+bpy.ops.object.rotation_clear(clear_delta=False)
+bpy.ops.object.location_clear(clear_delta=False)
+bpy.data.objects['Camera'].select_set(False)
+
+# add a plane
+bpy.ops.mesh.primitive_plane_add(size=2, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+plane = bpy.data.objects['Plane']
+
+# set camera location to match plane
+camera.location = (0.0, 0.0, 4.92)
+# set plane scale to match camera view
+plane.scale = (1.775, 1.0, 1.0)
+
+# parenting plane to camera
+camera.select_set(True)
+plane.select_set(True)
+bpy.ops.object.parent_set(type='OBJECT', keep_transform=False)
+
+# make plane transparent
+plane.select_set(True)
+plane.active_material = bpy.data.materials.new("Transparent")
+bpy.data.materials["Transparent"].use_nodes = True
+bpy.data.materials["Transparent"].node_tree.nodes["Principled BSDF"].inputs[21].default_value = 0
+plane.active_material.blend_method = 'BLEND'
+
+# ---------------------------------------------
+plane.location = (-2.8, 0, 5)
+
+# select cube
+for ob in bpy.context.selected_objects:
+  ob.select_set(False)
+
+bpy.context.view_layer.objects.active = cube
+bpy.ops.object.editmode_toggle()
+plane.select_set(True)
+
+for area in bpy.context.screen.areas:
+  if area.type == 'VIEW_3D':
+    area.spaces[0].region_3d.view_perspective = 'CAMERA'
+    override = bpy.context.copy()
+    override['area'] = area
+    break
+
+ret = bpy.context.temp_override(window=override['window'], area=override['area'], region=override['region'])
+bpy.ops.mesh.knife_project()
+
+
+
