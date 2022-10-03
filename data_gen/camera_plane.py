@@ -47,15 +47,18 @@ bpy.context.view_layer.objects.active = cube
 bpy.ops.object.editmode_toggle()
 plane.select_set(True)
 
-for area in bpy.context.screen.areas:
+from bpy import context
+from mathutils import Matrix, Quaternion
+
+for i,area in enumerate(bpy.context.screen.areas):
   if area.type == 'VIEW_3D':
-    area.spaces[0].region_3d.view_perspective = 'CAMERA'
-    override = bpy.context.copy()
-    override['area'] = area
+    bpy.context.screen.areas[i].spaces[0].region_3d.view_perspective = 'CAMERA'
+    area.spaces[0].region_3d.update()
+    for region in area.regions:
+      if region.type == 'WINDOW':
+        override = {'area': area, 'region': region, 'edit_object':context.edit_object}
+        break
     break
 
-ret = bpy.context.temp_override(window=override['window'], area=override['area'], region=override['region'])
-bpy.ops.mesh.knife_project()
-
-
-
+with context.temp_override(**override):
+  bpy.ops.mesh.knife_project()
