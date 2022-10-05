@@ -66,4 +66,4 @@ if __name__ == '__main__':
   empty.constraints['Follow Path'].offset = 25
   bpy.context.view_layer.update()
 
-  cut_obj_camera_view(empty, plane)
+  cut_obj_camera_view(stop_sign, plane)

@@ -37,7 +37,7 @@ def cut_obj_camera_view(obj, plane):
   # unselect all, then select cube and plane
   for ob in bpy.context.selected_objects:
     ob.select_set(False)
-  bpy.context.view_layer.objects.active = obj 
+  bpy.context.view_layer.objects.active = obj
   bpy.ops.object.editmode_toggle()
   plane.select_set(True)
 
