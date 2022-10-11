@@ -52,6 +52,7 @@ def cut_obj_camera_view(obj, plane):
       break
 
   # cut
+  return
   with bpy.context.temp_override(**override):
     bpy.ops.mesh.knife_project()
 
@@ -82,3 +83,4 @@ def create_background():
   links = node_tree.links
   links.new(node_environment.outputs["Color"], node_background.inputs["Color"])
   links.new(node_background.outputs["Background"], node_output.inputs["Surface"])
+
