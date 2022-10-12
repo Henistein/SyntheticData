@@ -62,59 +62,60 @@ if __name__ == '__main__':
 
   # background
   create_background()
-
-  # subdivie plane 8 times
-  bpy.context.view_layer.objects.active = plane
-  bpy.ops.object.editmode_toggle()
-  for i in range(8):
-    bpy.ops.mesh.subdivide()
-
-  # flip normals
-  bpy.ops.mesh.flip_normals()
-  bpy.ops.object.editmode_toggle()
-
-  # create and scale a new plane according to object distance (so it matches camera FOV)
-  bpy.context.view_layer.objects.active = plane
-  plane_loc = list(bpy.context.object.matrix_world.to_translation())
-  print(plane_loc)
-if 1 == 0:
-  stop_loc = list(stop_sign.matrix_world.to_translation())
-  d = dist(plane_loc, stop_loc)
-  scale_x, scale_y = (d/10)*3.61, (d/10)*2.03
-
-  bpy.ops.mesh.primitive_plane_add(size=2, enter_editmode=False, align='WORLD')
-  new_plane = bpy.data.objects['Plane.001']
-  x,y,z = tuple(plane.matrix_world.to_translation())
-  print(x,y,z)
-  new_plane.location.x = x
-  print(new_plane.location)
-  #new_plane.rotation_euler = plane.matrix_world.to_euler()
-
-  # Shrinkwarp
-  """
-  bpy.context.view_layer.objects.active = plane
-  bpy.ops.object.modifier_add(type='SHRINKWRAP')
-  bpy.context.object.modifiers["Shrinkwrap"].wrap_method = 'PROJECT'
-  bpy.context.object.modifiers["Shrinkwrap"].target = stop_sign
-  """
-  #bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
-
-  # Boolean
-  """
-  bpy.ops.object.modifier_add(type='BOOLEAN')
-  bpy.context.object.modifiers["Boolean"].operation = 'INTERSECT'
-  bpy.context.object.modifiers["Boolean"].use_self = True
-  bpy.context.object.modifiers["Boolean"].object = stop_sign
-  bpy.ops.object.modifier_apply(modifier="Boolean")
-  """
-
-
   
-  # ------------------------------------------
+  # -------------------------------------------
   empty = bpy.data.objects['Empty']
   empty.constraints['Follow Path'].offset = 25
   bpy.context.view_layer.update()
+  # -------------------------------------------
 
+  bpy.ops.mesh.primitive_plane_add(size=2, enter_editmode=False, align='WORLD')
+  new_plane = bpy.data.objects['Plane.001']
+  new_plane.location = plane.matrix_world.to_translation()
+  new_plane.rotation_euler = plane.matrix_world.to_euler()
+  bpy.context.view_layer.objects.active = new_plane
+
+  #bpy.context.view_layer.objects.active = plane
+  bpy.ops.object.editmode_toggle()
+  bpy.ops.mesh.flip_normals()
+
+  # subdivie plane 8 times
+  for i in range(8):
+    bpy.ops.mesh.subdivide()
+  bpy.ops.object.editmode_toggle()
+
+  # create and scale a new plane according to object distance (so it matches camera FOV)
+  plane_loc = list(plane.matrix_world.to_translation())
+  stop_loc = list(stop_sign.matrix_world.to_translation())
+  d = dist(plane_loc, stop_loc)
+  scale_x, scale_y = (d/10)*3.61, (d/10)*2.03
+  new_plane.scale = (scale_x, scale_y, 1)
+  #plane.scale = (scale_x, scale_y, 1)
+  bpy.context.view_layer.update()
+
+
+
+  # Shrinkwarp
+  bpy.context.view_layer.objects.active = new_plane
+  bpy.ops.object.modifier_add(type='SHRINKWRAP')
+  bpy.context.object.modifiers["Shrinkwrap"].wrap_method = 'PROJECT'
+  bpy.context.object.modifiers["Shrinkwrap"].target = stop_sign
+  #bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
+
+  # Boolean
+  bpy.ops.object.modifier_add(type='BOOLEAN')
+  bpy.context.object.modifiers["Boolean"].operation = 'INTERSECT'
+  bpy.context.object.modifiers["Boolean"].use_self = True
+  bpy.context.object.modifiers["Boolean"].use_hole_tolerant = True
+  bpy.context.object.modifiers["Boolean"].object = stop_sign
+  #bpy.ops.object.modifier_apply(modifier="Boolean")
+
+
+  # ------------------------------------------
+  bpy.context.view_layer.update()
+
+if 1 == 0:
+  pass
   # TODO:
   # Arranjar a projection
   # Ver se da match com a camera
