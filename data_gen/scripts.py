@@ -1,5 +1,6 @@
 import bpy
 from math import dist
+from match import get_vertices_coords
 
 def create_camera_plane():
   # objects
@@ -34,34 +35,6 @@ def create_camera_plane():
 
   return plane
 
-"""
-def cut_obj_camera_view(obj, plane):
-  # unselect all, then select cube and plane
-  for ob in bpy.context.selected_objects:
-    ob.select_set(False)
-  bpy.context.view_layer.objects.active = obj
-  bpy.ops.object.editmode_toggle()
-  plane.select_set(True)
-
-  for i,area in enumerate(bpy.context.screen.areas):
-    if area.type == 'VIEW_3D':
-      bpy.context.screen.areas[i].spaces[0].region_3d.view_perspective = 'CAMERA'
-      area.spaces[0].region_3d.update()
-      for region in area.regions:
-        if region.type == 'WINDOW':
-          override = {'area': area, 'region': region, 'edit_object':bpy.context.edit_object}
-          break
-      break
-
-  # cut
-  with bpy.context.temp_override(**override):
-    bpy.ops.mesh.knife_project()
-
-  # separate cut object and set to object mode
-  bpy.ops.mesh.separate(type="SELECTED")
-  bpy.ops.object.editmode_toggle()
-"""
-
 def cut_obj_camera_view(bpy, plane, obj):
   bpy.ops.mesh.primitive_plane_add(size=2, enter_editmode=False, align='WORLD')
   new_plane = bpy.data.objects['Plane.001']
@@ -74,7 +47,7 @@ def cut_obj_camera_view(bpy, plane, obj):
   bpy.ops.mesh.flip_normals()
 
   # subdivie plane 8 times
-  for i in range(8):
+  for i in range(7):
     bpy.ops.mesh.subdivide()
   bpy.ops.object.editmode_toggle()
 
@@ -84,8 +57,6 @@ def cut_obj_camera_view(bpy, plane, obj):
   d = dist(plane_loc, stop_loc)
   scale_x, scale_y = (d/10)*3.61, (d/10)*2.03
   new_plane.scale = (scale_x, scale_y, 1)
-  #plane.scale = (scale_x, scale_y, 1)
-  bpy.context.view_layer.update()
 
   # Shrinkwarp
   bpy.context.view_layer.objects.active = new_plane
@@ -102,9 +73,14 @@ def cut_obj_camera_view(bpy, plane, obj):
   bpy.context.object.modifiers["Boolean"].object = obj
   bpy.ops.object.modifier_apply(modifier="Boolean")
 
-
-  # ------------------------------------------
   bpy.context.view_layer.update()
+
+  # save new_plane coordinates and then remove it
+  co_3d = get_vertices_coords(new_plane)
+  bpy.context.view_layer.objects.active = new_plane
+  bpy.ops.object.delete()
+
+  return co_3d
 
 
 def create_background():

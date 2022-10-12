@@ -1,3 +1,4 @@
+from distutils.log import debug
 import bpy
 
 import importlib
@@ -11,6 +12,7 @@ if blend_dir not in sys.path:
 import scripts
 from scripts import *
 import data_gen
+from match import filter_non_visible_coords, filter_repeated_coords, get_coordinates_matches, visualize_vertices
 importlib.reload(scripts)
 importlib.reload(data_gen)
 
@@ -71,9 +73,9 @@ if __name__ == '__main__':
   empty.constraints['Follow Path'].offset = 25
   """
   # -------------------------------------------
-  path = '/home/socialab/Henrique/DATA'
+  path = '/home/socialab/Henrique/DATA/stop_sign'
 
-  dg = data_gen.CreateData(bpy, path)
+  dg = data_gen.CreateData(bpy, path, debug=True)
 
   # add empty obj (camera)
   dg.add_obj('empty', bpy.data.objects['Empty'])
@@ -81,6 +83,11 @@ if __name__ == '__main__':
   dg.add_feature("constraints,Follow Path,offset", 4, 46, 3)
   # influence
   dg.add_feature("constraints,Follow Path,influence", 0.25, 1.0, 0.05)
+
+  # Generate and create data
+  dg.generate(10)
+  dg.create_data(stop_sign)
+
 
   """
   # add stop obj
@@ -91,21 +98,36 @@ if __name__ == '__main__':
   dg.add_feature("location.z", -10, 10, 2)
   """
 
-  dg.generate(10)
-  dg.create_random_sample()
 
-  # make the cut
-  cut_obj_camera_view(bpy, plane, stop_sign)
+  """
+  # Sample
+  dg.create_random_sample()
+  obj_3d_mask = cut_obj_camera_view(bpy, plane, stop_sign)
+
+  co_3d_2d = get_coordinates_matches(obj_3d_mask, bpy.data.objects['Camera'], bpy.context.scene)
+  co_3d_2d = filter_non_visible_coords(co_3d_2d)
+  co_3d_2d = filter_repeated_coords(co_3d_2d)
+
+  co_3d, co_2d = list(zip(*co_3d_2d))
+  co_3d = list(map(tuple, co_3d))
+
+  visualize_vertices(co_2d)
+  """
+
+
+
+
 
   # TODO:
-  # Arranjar a projection
-  # Ver se da match com a camera
-  # Arranjar a formula
+  # Fazer experiencias com a GPU
+  # Criar mecanismo de debug na malha atraves dos vertices
+  # Arranjar mais malhas
+  # Por os backgrounds a dar
 
-  # Fazer o script para tornar isto automatico
-  # - Subdivisoes nas edges
-  # - Dar scale ao plane de acordo com a distancia ao objecto (saber como calcular distancia)
-  # - Shrinkwarp
-  # - Boolean
 
+  # Perceber como vamos tratar o limite de vertices
+  # Estudar Siamese Neural Networks
+
+  # further TODO:
+  # Resolver bug em que quando o objeto fica demasiado longe o shrinkwarp funciona mas o boolean nao
   # Ter em conta as otimizacoes

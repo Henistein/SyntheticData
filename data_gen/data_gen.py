@@ -1,4 +1,8 @@
 #import pandas as pd
+import os
+import numpy as np
+from match import filter_non_visible_coords, filter_repeated_coords, get_coordinates_matches, visualize_vertices
+from scripts import cut_obj_camera_view
 
 from math import prod, radians
 from random import shuffle, choice
@@ -35,6 +39,7 @@ class DataGen:
   def __init__(self):
     self.objs = {}
     self.curr_obj = None
+    self.image_index = 0
   
   @property
   def total_features(self): return sum([len(x.features) for x in self.objs.values()])
@@ -87,16 +92,24 @@ def _setattr(obj, attr_s, val):
   setattr(obj, parts[-1], val)
 
 class CreateData(DataGen):
-  def __init__(self, blender, destination_path):
+  def __init__(self, blender, destination_path, debug=False):
     super().__init__()
     self.blender = blender
     self.destination_path = destination_path
+    self.debug = debug
+    # create image, annotations and maybe debug folders
+    if not os.path.exists(destination_path): os.mkdir(destination_path)
+    if not os.path.exists(destination_path+"/images"): os.mkdir(destination_path+"/images")
+    if not os.path.exists(destination_path+"/annotations"): os.mkdir(destination_path+"/annotations")
+    if debug: 
+      if not os.path.exists(destination_path+"/debug"): os.mkdir(destination_path+"/debug")
   
   def generate(self, ammount):
     self.generated_data = super().generate(ammount)
   
-  def create_images(self):
-    i = 0
+  def create_data(self, obj):
+    assert self.generated_data is not None, 'No data generated!'
+    self.image_index = 0
     for data in self.generated_data:
       for ft_n, value in enumerate(data):
         feature = self.feature_names[ft_n]
@@ -111,10 +124,35 @@ class CreateData(DataGen):
         else:
           setattr(self.objs[self.curr_obj], feature, value)
 
+      index = str(1000000+self.image_index)[1:]
       # save image
-      self.blender.context.scene.render.filepath = f'{self.destination_path}/img{str(1000000+i)[1:]}.png' 
+      self.blender.context.scene.render.filepath = f'{self.destination_path+"/images"}/img{index}.png' 
       self.blender.ops.render.render(write_still=True)
-      i += 1
+      self.image_index += 1
+
+      # create annotations
+      # make the cut
+      co_3d = cut_obj_camera_view(
+        self.blender, 
+        self.blender.data.objects['Plane'], 
+        obj
+      )
+      co_3d_2d = get_coordinates_matches(
+        co_3d,
+        self.blender.data.objects['Camera'],
+        self.blender.context.scene
+      )
+      co_3d_2d = filter_non_visible_coords(co_3d_2d)
+      co_3d_2d = filter_repeated_coords(co_3d_2d)
+
+      # save coordinates matches in npy format
+      np.save(self.destination_path+f"/annotations/a{index}.npy", co_3d_2d)
+
+      if self.debug: 
+        co_2d = list(zip(*co_3d_2d))[1]
+        print(co_2d[:10])
+        visualize_vertices(co_2d, path=self.destination_path+f"/debug/d{index}.png")
+
 
   def create_random_sample(self):
     data = choice(self.generated_data)
@@ -130,17 +168,6 @@ class CreateData(DataGen):
         setattr(getattr(self.objs[obj_name].obj, dict_)[key], atr, value)
       else:
         setattr(self.objs[self.curr_obj], feature, value)
-
-
-
-  def create_csv(self):
-    data = pd.DataFrame(self.generated_data, columns=self.feature_names)
-    data.to_csv(self.destination_path, index=False)
-
-  def create_data(self):
-    assert self.generated_data is not None, 'No data generated!'
-    #self.create_csv()
-    self.create_images()
 
 
 """
