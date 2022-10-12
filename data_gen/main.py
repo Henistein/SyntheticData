@@ -4,6 +4,7 @@ import bpy
 import importlib
 import os
 import sys
+import glob
 
 blend_dir = os.path.dirname(bpy.data.filepath)
 if blend_dir not in sys.path:
@@ -19,6 +20,9 @@ importlib.reload(data_gen)
 from math import radians, dist
 
 if __name__ == '__main__':
+  bpy.data.scenes[0].render.engine = "CYCLES"
+  bpy.context.scene.cycles.device = "GPU"
+
   # remove cube object
   bpy.data.objects['Cube'].select_set(True)
   bpy.ops.object.delete()
@@ -28,10 +32,10 @@ if __name__ == '__main__':
 
   # import sign object
   bpy.ops.import_scene.obj(filepath="models/stop_sign.obj")
-  stop_sign = bpy.data.objects['Stop']
+  obj = bpy.data.objects['Stop']
 
   # reset objects position
-  stop_sign.location.x = 0
+  obj.location.x = 0
   plane.rotation_euler.x = radians(0)
   plane.rotation_euler.y = radians(0)
   plane.rotation_euler.z = radians(0)
@@ -47,7 +51,7 @@ if __name__ == '__main__':
 
   # make camera track sign
   camera_constraint = plane.constraints.new(type='TRACK_TO')
-  camera_constraint.target = stop_sign
+  camera_constraint.target = obj 
 
   # select empty and plane
   bpy.data.objects['Empty'].select_set(True)
@@ -65,13 +69,8 @@ if __name__ == '__main__':
   bpy.context.scene.cycles.samples = 1024
 
   # background
-  create_background()
+  node_environment = create_background()
   
-  # -------------------------------------------
-  """
-  empty = bpy.data.objects['Empty']
-  empty.constraints['Follow Path'].offset = 25
-  """
   # -------------------------------------------
   path = '/home/socialab/Henrique/DATA/stop_sign'
 
@@ -84,19 +83,24 @@ if __name__ == '__main__':
   # influence
   dg.add_feature("constraints,Follow Path,influence", 0.25, 1.0, 0.05)
 
-  # Generate and create data
-  dg.generate(10)
-  dg.create_data(stop_sign)
-
-
   """
-  # add stop obj
-  dg.add_obj('stop_sign', stop_sign)
+  # add obj
+  dg.add_obj('obj', obj)
   # location
   dg.add_feature("location.x", -40, 0, 4)
   dg.add_feature("location.y", -20, 20, 4)
   dg.add_feature("location.z", -10, 10, 2)
   """
+
+  # add background object
+  dg.add_obj('node_environment', node_environment)
+  dg.add_elements('image', list(map(bpy.data.images.load, glob.glob('backgrounds/*'))))
+
+  # Generate and create data
+  dg.generate(10)
+  dg.create_data(obj)
+
+
 
 
   """
@@ -119,15 +123,13 @@ if __name__ == '__main__':
 
 
   # TODO:
-  # Fazer experiencias com a GPU
   # Criar mecanismo de debug na malha atraves dos vertices
-  # Arranjar mais malhas
-  # Por os backgrounds a dar
-
 
   # Perceber como vamos tratar o limite de vertices
   # Estudar Siamese Neural Networks
 
   # further TODO:
   # Resolver bug em que quando o objeto fica demasiado longe o shrinkwarp funciona mas o boolean nao
+  # - Uma alternativa podera ser colocar o plano da camera muito proximo do objeto
+
   # Ter em conta as otimizacoes
