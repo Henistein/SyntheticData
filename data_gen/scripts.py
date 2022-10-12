@@ -1,4 +1,5 @@
 import bpy
+from math import dist
 
 def create_camera_plane():
   # objects
@@ -33,6 +34,7 @@ def create_camera_plane():
 
   return plane
 
+"""
 def cut_obj_camera_view(obj, plane):
   # unselect all, then select cube and plane
   for ob in bpy.context.selected_objects:
@@ -52,13 +54,58 @@ def cut_obj_camera_view(obj, plane):
       break
 
   # cut
-  return
   with bpy.context.temp_override(**override):
     bpy.ops.mesh.knife_project()
 
   # separate cut object and set to object mode
   bpy.ops.mesh.separate(type="SELECTED")
   bpy.ops.object.editmode_toggle()
+"""
+
+def cut_obj_camera_view(bpy, plane, obj):
+  bpy.ops.mesh.primitive_plane_add(size=2, enter_editmode=False, align='WORLD')
+  new_plane = bpy.data.objects['Plane.001']
+  new_plane.location = plane.matrix_world.to_translation()
+  new_plane.rotation_euler = plane.matrix_world.to_euler()
+  bpy.context.view_layer.objects.active = new_plane
+
+  #bpy.context.view_layer.objects.active = plane
+  bpy.ops.object.editmode_toggle()
+  bpy.ops.mesh.flip_normals()
+
+  # subdivie plane 8 times
+  for i in range(8):
+    bpy.ops.mesh.subdivide()
+  bpy.ops.object.editmode_toggle()
+
+  # create and scale a new plane according to object distance (so it matches camera FOV)
+  plane_loc = list(plane.matrix_world.to_translation())
+  stop_loc = list(obj.matrix_world.to_translation())
+  d = dist(plane_loc, stop_loc)
+  scale_x, scale_y = (d/10)*3.61, (d/10)*2.03
+  new_plane.scale = (scale_x, scale_y, 1)
+  #plane.scale = (scale_x, scale_y, 1)
+  bpy.context.view_layer.update()
+
+  # Shrinkwarp
+  bpy.context.view_layer.objects.active = new_plane
+  bpy.ops.object.modifier_add(type='SHRINKWRAP')
+  bpy.context.object.modifiers["Shrinkwrap"].wrap_method = 'PROJECT'
+  bpy.context.object.modifiers["Shrinkwrap"].target = obj
+  bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
+
+  # Boolean
+  bpy.ops.object.modifier_add(type='BOOLEAN')
+  bpy.context.object.modifiers["Boolean"].operation = 'INTERSECT'
+  bpy.context.object.modifiers["Boolean"].use_self = True
+  bpy.context.object.modifiers["Boolean"].use_hole_tolerant = True
+  bpy.context.object.modifiers["Boolean"].object = obj
+  bpy.ops.object.modifier_apply(modifier="Boolean")
+
+
+  # ------------------------------------------
+  bpy.context.view_layer.update()
+
 
 def create_background():
   # background

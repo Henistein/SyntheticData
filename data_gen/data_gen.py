@@ -116,6 +116,23 @@ class CreateData(DataGen):
       self.blender.ops.render.render(write_still=True)
       i += 1
 
+  def create_random_sample(self):
+    data = choice(self.generated_data)
+    for ft_n, value in enumerate(data):
+      feature = self.feature_names[ft_n]
+      if '.' in feature:
+        # is not a dict
+        obj_name, atr = feature.split('.', 1)
+        _setattr(self.objs[obj_name].obj, atr, value)
+      elif ',' in feature:
+        # is a dict
+        obj_name, dict_, key, atr = feature.split(',')
+        setattr(getattr(self.objs[obj_name].obj, dict_)[key], atr, value)
+      else:
+        setattr(self.objs[self.curr_obj], feature, value)
+
+
+
   def create_csv(self):
     data = pd.DataFrame(self.generated_data, columns=self.feature_names)
     data.to_csv(self.destination_path, index=False)

@@ -10,7 +10,9 @@ if blend_dir not in sys.path:
 
 import scripts
 from scripts import *
+import data_gen
 importlib.reload(scripts)
+importlib.reload(data_gen)
 
 from math import radians, dist
 
@@ -64,58 +66,37 @@ if __name__ == '__main__':
   create_background()
   
   # -------------------------------------------
+  """
   empty = bpy.data.objects['Empty']
   empty.constraints['Follow Path'].offset = 25
-  bpy.context.view_layer.update()
+  """
   # -------------------------------------------
+  path = '/home/socialab/Henrique/DATA'
 
-  bpy.ops.mesh.primitive_plane_add(size=2, enter_editmode=False, align='WORLD')
-  new_plane = bpy.data.objects['Plane.001']
-  new_plane.location = plane.matrix_world.to_translation()
-  new_plane.rotation_euler = plane.matrix_world.to_euler()
-  bpy.context.view_layer.objects.active = new_plane
+  dg = data_gen.CreateData(bpy, path)
 
-  #bpy.context.view_layer.objects.active = plane
-  bpy.ops.object.editmode_toggle()
-  bpy.ops.mesh.flip_normals()
+  # add empty obj (camera)
+  dg.add_obj('empty', bpy.data.objects['Empty'])
+  # offset
+  dg.add_feature("constraints,Follow Path,offset", 4, 46, 3)
+  # influence
+  dg.add_feature("constraints,Follow Path,influence", 0.25, 1.0, 0.05)
 
-  # subdivie plane 8 times
-  for i in range(8):
-    bpy.ops.mesh.subdivide()
-  bpy.ops.object.editmode_toggle()
+  """
+  # add stop obj
+  dg.add_obj('stop_sign', stop_sign)
+  # location
+  dg.add_feature("location.x", -40, 0, 4)
+  dg.add_feature("location.y", -20, 20, 4)
+  dg.add_feature("location.z", -10, 10, 2)
+  """
 
-  # create and scale a new plane according to object distance (so it matches camera FOV)
-  plane_loc = list(plane.matrix_world.to_translation())
-  stop_loc = list(stop_sign.matrix_world.to_translation())
-  d = dist(plane_loc, stop_loc)
-  scale_x, scale_y = (d/10)*3.61, (d/10)*2.03
-  new_plane.scale = (scale_x, scale_y, 1)
-  #plane.scale = (scale_x, scale_y, 1)
-  bpy.context.view_layer.update()
+  dg.generate(10)
+  dg.create_random_sample()
 
+  # make the cut
+  cut_obj_camera_view(bpy, plane, stop_sign)
 
-
-  # Shrinkwarp
-  bpy.context.view_layer.objects.active = new_plane
-  bpy.ops.object.modifier_add(type='SHRINKWRAP')
-  bpy.context.object.modifiers["Shrinkwrap"].wrap_method = 'PROJECT'
-  bpy.context.object.modifiers["Shrinkwrap"].target = stop_sign
-  #bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
-
-  # Boolean
-  bpy.ops.object.modifier_add(type='BOOLEAN')
-  bpy.context.object.modifiers["Boolean"].operation = 'INTERSECT'
-  bpy.context.object.modifiers["Boolean"].use_self = True
-  bpy.context.object.modifiers["Boolean"].use_hole_tolerant = True
-  bpy.context.object.modifiers["Boolean"].object = stop_sign
-  #bpy.ops.object.modifier_apply(modifier="Boolean")
-
-
-  # ------------------------------------------
-  bpy.context.view_layer.update()
-
-if 1 == 0:
-  pass
   # TODO:
   # Arranjar a projection
   # Ver se da match com a camera
