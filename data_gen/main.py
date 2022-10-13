@@ -70,6 +70,12 @@ if __name__ == '__main__':
 
   # background
   node_environment = create_background()
+
+  # visible mesh
+  new_plane = cut_obj_camera_view(bpy, plane, obj)
+  get_visible_mesh(bpy, new_plane, obj)
+
+if 1 == 0:
   
   # -------------------------------------------
   path = '/home/socialab/Henrique/DATA/stop_sign'
@@ -123,10 +129,8 @@ if __name__ == '__main__':
 
 
   # TODO:
-  # Criar mecanismo de debug na malha atraves dos vertices
-
   # Perceber como vamos tratar o limite de vertices
-  # Estudar Siamese Neural Networks
+
 
   # further TODO:
   # Resolver bug em que quando o objeto fica demasiado longe o shrinkwarp funciona mas o boolean nao

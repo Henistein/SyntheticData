@@ -1,6 +1,7 @@
 import bpy
 from math import dist
 from match import get_vertices_coords
+from mathutils.bvhtree import BVHTree
 
 def create_camera_plane():
   # objects
@@ -47,7 +48,7 @@ def cut_obj_camera_view(bpy, plane, obj):
   bpy.ops.mesh.flip_normals()
 
   # subdivie plane 8 times
-  for i in range(7):
+  for _ in range(7):
     bpy.ops.mesh.subdivide()
   bpy.ops.object.editmode_toggle()
 
@@ -65,6 +66,9 @@ def cut_obj_camera_view(bpy, plane, obj):
   bpy.context.object.modifiers["Shrinkwrap"].target = obj
   bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
 
+  return new_plane
+
+  """
   # Boolean
   bpy.ops.object.modifier_add(type='BOOLEAN')
   bpy.context.object.modifiers["Boolean"].operation = 'INTERSECT'
@@ -81,6 +85,33 @@ def cut_obj_camera_view(bpy, plane, obj):
   bpy.ops.object.delete()
 
   return co_3d
+  """
+
+def get_visible_mesh(bpy, plane, obj):
+  m_1 = plane.matrix_world.copy()
+  mesh_1_verts = [m_1 @ vertex.co for vertex in plane.data.vertices]
+  mesh_1_polys = [polygon.vertices for polygon in plane.data.polygons]
+  
+  m_2 = obj.matrix_world.copy()
+  mesh_2_verts = [m_2 @ vertex.co for vertex in obj.data.vertices] 
+  mesh_2_polys = [polygon.vertices for polygon in obj.data.polygons]
+
+  mesh_1_bvh_tree = BVHTree.FromPolygons(mesh_1_verts, mesh_1_polys)
+  mesh_2_bvh_tree = BVHTree.FromPolygons(mesh_2_verts, mesh_2_polys)
+
+  intersections = mesh_1_bvh_tree.overlap(mesh_2_bvh_tree)
+
+  mesh_2_polys_ints = [pair[1] for pair in intersections]
+
+  # select faces
+  for face in obj.data.polygons:
+    if face.index in mesh_2_polys_ints:
+      face.select = True
+  
+  # separate face
+  bpy.ops.object.editmode_toggle()
+  bpy.ops.mesh.separate(type="SELECTED")
+  bpy.ops.object.editmode_toggle()
 
 
 def create_background():
