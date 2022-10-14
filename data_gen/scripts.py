@@ -103,7 +103,14 @@ def get_visible_mesh(bpy, plane, obj):
 
   mesh_2_polys_ints = [pair[1] for pair in intersections]
 
-  # select faces
+  # get the visible faces
+  ret = set()
+  for face in obj.data.polygons:
+    if face.index in mesh_2_polys_ints:
+      for v in face.vertices:
+        ret.add(tuple(obj.matrix_world @ obj.data.vertices[v].co))
+  return ret
+  """
   for face in obj.data.polygons:
     if face.index in mesh_2_polys_ints:
       face.select = True
@@ -112,6 +119,7 @@ def get_visible_mesh(bpy, plane, obj):
   bpy.ops.object.editmode_toggle()
   bpy.ops.mesh.separate(type="SELECTED")
   bpy.ops.object.editmode_toggle()
+  """
 
 
 def create_background():

@@ -18,6 +18,8 @@ importlib.reload(scripts)
 importlib.reload(data_gen)
 
 from math import radians, dist
+import numpy as np
+import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
   bpy.data.scenes[0].render.engine = "CYCLES"
@@ -68,12 +70,30 @@ if __name__ == '__main__':
   # Reduce samples (faster rendering)
   bpy.context.scene.cycles.samples = 1024
 
+  # ---------------------------
+  empty = bpy.data.objects['Empty']
+  empty.constraints['Follow Path'].offset = 25
+  bpy.context.view_layer.update()
+  # ---------------------------
+
   # background
   node_environment = create_background()
 
   # visible mesh
   new_plane = cut_obj_camera_view(bpy, plane, obj)
-  get_visible_mesh(bpy, new_plane, obj)
+  visible_mesh = get_visible_mesh(bpy, new_plane, obj)
+
+  co_3d_2d = get_coordinates_matches(
+    visible_mesh,
+    bpy.data.objects['Camera'],
+    bpy.context.scene
+  )
+  co_3d_2d = filter_non_visible_coords(co_3d_2d)
+  co_3d_2d = filter_repeated_coords(co_3d_2d)
+
+  co_2d = list(zip(*co_3d_2d))[1]
+  visualize_vertices(co_2d)
+
 
 if 1 == 0:
   

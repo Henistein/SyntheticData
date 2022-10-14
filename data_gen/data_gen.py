@@ -150,7 +150,6 @@ class CreateData(DataGen):
 
       if self.debug: 
         co_2d = list(zip(*co_3d_2d))[1]
-        print(co_2d[:10])
         visualize_vertices(co_2d, path=self.destination_path+f"/debug/d{index}.png")
 
 

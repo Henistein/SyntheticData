@@ -9,6 +9,8 @@ def vert_coord_to_2d(points, camera, scene):
   ret = []
   for co in points:
     # convert the 3d coordinates to 2d
+    if isinstance(co, tuple):
+      co = Vector(co)
     co_2d = world_to_camera_view(scene, camera, co)
     # convert the 2d coordinates to pixel coordinates
     ret.append(_2d_to_pixel_coords(scene, co_2d))
@@ -37,6 +39,7 @@ def visualize_vertices(vertices, W=1920, H=1080, path='fig.png'):
   plt.plot(co_2d[:, 0], co_2d[:, 1], 'bo')
   plt.ylim(0, H)
   plt.xlim(0, W)
+  plt.gca().invert_yaxis()
   plt.savefig(path)
   plt.clf()
 
