@@ -2,7 +2,7 @@
 import os
 import numpy as np
 from match import filter_non_visible_coords, filter_repeated_coords, get_coordinates_matches, visualize_vertices
-from scripts import cut_obj_camera_view
+from scripts import cut_obj_camera_view, get_visible_mesh
 
 from math import prod, radians
 from random import shuffle, choice
@@ -131,27 +131,24 @@ class CreateData(DataGen):
       self.image_index += 1
 
       # create annotations
-      # make the cut
-      co_3d = cut_obj_camera_view(
-        self.blender, 
-        self.blender.data.objects['Plane'], 
-        obj
-      )
+      # visible mesh
+      new_plane = cut_obj_camera_view(self.blender, self.blender.data.objects['Plane'], obj)
+      visible_mesh = get_visible_mesh(self.blender, new_plane, obj)
+
       co_3d_2d = get_coordinates_matches(
-        co_3d,
+        visible_mesh,
         self.blender.data.objects['Camera'],
         self.blender.context.scene
       )
       co_3d_2d = filter_non_visible_coords(co_3d_2d)
       co_3d_2d = filter_repeated_coords(co_3d_2d)
 
-      # save coordinates matches in npy format
-      np.save(self.destination_path+f"/annotations/a{index}.npy", co_3d_2d)
-
-      if self.debug: 
+      if self.debug:
         co_2d = list(zip(*co_3d_2d))[1]
         visualize_vertices(co_2d, path=self.destination_path+f"/debug/d{index}.png")
 
+      # save coordinates matches in npy format
+      np.save(self.destination_path+f"/annotations/a{index}.npy", co_3d_2d)
 
   def create_random_sample(self):
     data = choice(self.generated_data)
@@ -167,34 +164,3 @@ class CreateData(DataGen):
         setattr(getattr(self.objs[obj_name].obj, dict_)[key], atr, value)
       else:
         setattr(self.objs[self.curr_obj], feature, value)
-
-
-"""
-class Nop:
-  pass
-
-if __name__ == '__main__':
-  dg = CreateData('data.csv')
-
-  nop1 = Nop()
-  nop2 = Nop()
-
-  # add obj
-  dg.add_obj('nop1', nop1)
-  # rotation
-  dg.add_feature("rotation.x", 90, 100, 2, radians)
-  dg.add_feature("rotation.y", -180, 180, 36, radians)
-  dg.add_feature("rotation.z", 80, 100, 5, radians)
-  # location
-  dg.add_feature("location.x", 5, 25, 4)
-  dg.add_feature("location.y", -0.5, 0.5, 0.2)
-  dg.add_feature("location.z", -0.5, 0.5, 0.2)
-
-  dg.add_obj('nop2', nop2)
-  dg.add_feature("speed.x", 5, 25, 4)
-  dg.add_feature("speed.y", -0.5, 0.5, 0.2)
-  dg.add_feature("speed.z", -0.5, 0.5, 0.2)
-
-  dg.generate(1000)
-  dg.create_data()
-"""

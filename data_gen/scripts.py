@@ -87,7 +87,7 @@ def cut_obj_camera_view(bpy, plane, obj):
   return co_3d
   """
 
-def get_visible_mesh(bpy, plane, obj):
+def get_visible_mesh(bpy, plane, obj, visualize=False):
   m_1 = plane.matrix_world.copy()
   mesh_1_verts = [m_1 @ vertex.co for vertex in plane.data.vertices]
   mesh_1_polys = [polygon.vertices for polygon in plane.data.polygons]
@@ -104,22 +104,25 @@ def get_visible_mesh(bpy, plane, obj):
   mesh_2_polys_ints = [pair[1] for pair in intersections]
 
   # get the visible faces
+  if visualize:
+    bpy.context.selected_objects[0].select_set(False)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.editmode_toggle()
+    bpy.ops.mesh.select_all(action='DESELECT')
+    bpy.ops.object.editmode_toggle()
+
   ret = set()
   for face in obj.data.polygons:
     if face.index in mesh_2_polys_ints:
       for v in face.vertices:
+        if visualize: obj.data.vertices[v].select = True
         ret.add(tuple(obj.matrix_world @ obj.data.vertices[v].co))
+
+  # remove plane
+  bpy.context.view_layer.objects.active = plane
+  bpy.ops.object.delete()
+
   return ret
-  """
-  for face in obj.data.polygons:
-    if face.index in mesh_2_polys_ints:
-      face.select = True
-  
-  # separate face
-  bpy.ops.object.editmode_toggle()
-  bpy.ops.mesh.separate(type="SELECTED")
-  bpy.ops.object.editmode_toggle()
-  """
 
 
 def create_background():
@@ -146,3 +149,4 @@ def create_background():
   links.new(node_environment.outputs["Color"], node_background.inputs["Color"])
   links.new(node_background.outputs["Background"], node_output.inputs["Surface"])
 
+  return node_environment

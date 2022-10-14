@@ -70,33 +70,15 @@ if __name__ == '__main__':
   # Reduce samples (faster rendering)
   bpy.context.scene.cycles.samples = 1024
 
-  # ---------------------------
+  """
   empty = bpy.data.objects['Empty']
   empty.constraints['Follow Path'].offset = 25
   bpy.context.view_layer.update()
-  # ---------------------------
+  """
 
   # background
   node_environment = create_background()
 
-  # visible mesh
-  new_plane = cut_obj_camera_view(bpy, plane, obj)
-  visible_mesh = get_visible_mesh(bpy, new_plane, obj)
-
-  co_3d_2d = get_coordinates_matches(
-    visible_mesh,
-    bpy.data.objects['Camera'],
-    bpy.context.scene
-  )
-  co_3d_2d = filter_non_visible_coords(co_3d_2d)
-  co_3d_2d = filter_repeated_coords(co_3d_2d)
-
-  co_2d = list(zip(*co_3d_2d))[1]
-  visualize_vertices(co_2d)
-
-
-if 1 == 0:
-  
   # -------------------------------------------
   path = '/home/socialab/Henrique/DATA/stop_sign'
 
@@ -109,14 +91,12 @@ if 1 == 0:
   # influence
   dg.add_feature("constraints,Follow Path,influence", 0.25, 1.0, 0.05)
 
-  """
   # add obj
   dg.add_obj('obj', obj)
   # location
   dg.add_feature("location.x", -40, 0, 4)
   dg.add_feature("location.y", -20, 20, 4)
   dg.add_feature("location.z", -10, 10, 2)
-  """
 
   # add background object
   dg.add_obj('node_environment', node_environment)
@@ -125,35 +105,8 @@ if 1 == 0:
   # Generate and create data
   dg.generate(10)
   dg.create_data(obj)
-
-
-
-
-  """
-  # Sample
-  dg.create_random_sample()
-  obj_3d_mask = cut_obj_camera_view(bpy, plane, stop_sign)
-
-  co_3d_2d = get_coordinates_matches(obj_3d_mask, bpy.data.objects['Camera'], bpy.context.scene)
-  co_3d_2d = filter_non_visible_coords(co_3d_2d)
-  co_3d_2d = filter_repeated_coords(co_3d_2d)
-
-  co_3d, co_2d = list(zip(*co_3d_2d))
-  co_3d = list(map(tuple, co_3d))
-
-  visualize_vertices(co_2d)
-  """
-
-
-
-
+  #dg.create_random_sample()
 
   # TODO:
-  # Perceber como vamos tratar o limite de vertices
+  # Fazer moldes com mais subdivisoes
 
-
-  # further TODO:
-  # Resolver bug em que quando o objeto fica demasiado longe o shrinkwarp funciona mas o boolean nao
-  # - Uma alternativa podera ser colocar o plano da camera muito proximo do objeto
-
-  # Ter em conta as otimizacoes

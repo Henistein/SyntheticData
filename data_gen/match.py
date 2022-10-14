@@ -39,7 +39,7 @@ def visualize_vertices(vertices, W=1920, H=1080, path='fig.png'):
   plt.plot(co_2d[:, 0], co_2d[:, 1], 'bo')
   plt.ylim(0, H)
   plt.xlim(0, W)
-  plt.gca().invert_yaxis()
+  #plt.gca().invert_yaxis()
   plt.savefig(path)
   plt.clf()
 
