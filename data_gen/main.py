@@ -33,8 +33,10 @@ if __name__ == '__main__':
   plane = create_camera_plane()
 
   # import sign object
-  bpy.ops.import_scene.obj(filepath="models/stop_sign.obj")
-  obj = bpy.data.objects['Stop']
+  #bpy.ops.import_scene.obj(filepath="models/stop_sign.obj")
+  #obj = bpy.data.objects['Stop']
+  bpy.ops.import_scene.obj(filepath="models/sofa_5k.obj")
+  obj = bpy.data.objects['Sofa']
 
   # reset objects position
   obj.location.x = 0
@@ -79,8 +81,13 @@ if __name__ == '__main__':
   # background
   node_environment = create_background()
 
+  mask = create_mask()
+  print(mask)
+
+
   # -------------------------------------------
-  path = '/home/socialab/Henrique/DATA/stop_sign'
+if 1==0:
+  path = '/home/socialab/Henrique/DATA/teste'
 
   dg = data_gen.CreateData(bpy, path, debug=True)
 
@@ -94,9 +101,9 @@ if __name__ == '__main__':
   # add obj
   dg.add_obj('obj', obj)
   # location
-  dg.add_feature("location.x", -40, 0, 4)
-  dg.add_feature("location.y", -20, 20, 4)
-  dg.add_feature("location.z", -10, 10, 2)
+  dg.add_feature("location.x", -20, 0, 4)
+  dg.add_feature("location.y", -10, 10, 4)
+  dg.add_feature("location.z", -5, 5, 2)
 
   # add background object
   dg.add_obj('node_environment', node_environment)
@@ -104,9 +111,5 @@ if __name__ == '__main__':
 
   # Generate and create data
   dg.generate(10)
-  dg.create_data(obj)
-  #dg.create_random_sample()
-
-  # TODO:
-  # Fazer moldes com mais subdivisoes
-
+  #dg.create_data(obj)
+  dg.create_random_sample(obj)

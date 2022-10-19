@@ -107,6 +107,20 @@ class CreateData(DataGen):
   def generate(self, ammount):
     self.generated_data = super().generate(ammount)
   
+  def create_annotations(self, obj):
+    # visible mesh
+    new_plane = cut_obj_camera_view(self.blender, self.blender.data.objects['Plane'], obj)
+    visible_mesh = get_visible_mesh(self.blender, new_plane, obj)
+
+    co_3d_2d = get_coordinates_matches(
+      visible_mesh,
+      self.blender.data.objects['Camera'],
+      self.blender.context.scene
+    )
+    co_3d_2d = filter_non_visible_coords(co_3d_2d)
+    co_3d_2d = filter_repeated_coords(co_3d_2d)
+    return co_3d_2d
+  
   def create_data(self, obj):
     assert self.generated_data is not None, 'No data generated!'
     self.image_index = 0
@@ -131,17 +145,7 @@ class CreateData(DataGen):
       self.image_index += 1
 
       # create annotations
-      # visible mesh
-      new_plane = cut_obj_camera_view(self.blender, self.blender.data.objects['Plane'], obj)
-      visible_mesh = get_visible_mesh(self.blender, new_plane, obj)
-
-      co_3d_2d = get_coordinates_matches(
-        visible_mesh,
-        self.blender.data.objects['Camera'],
-        self.blender.context.scene
-      )
-      co_3d_2d = filter_non_visible_coords(co_3d_2d)
-      co_3d_2d = filter_repeated_coords(co_3d_2d)
+      co_3d_2d = self.create_annotations(obj)
 
       if self.debug:
         co_2d = list(zip(*co_3d_2d))[1]
@@ -150,7 +154,7 @@ class CreateData(DataGen):
       # save coordinates matches in npy format
       np.save(self.destination_path+f"/annotations/a{index}.npy", co_3d_2d)
 
-  def create_random_sample(self):
+  def create_random_sample(self, obj):
     data = choice(self.generated_data)
     for ft_n, value in enumerate(data):
       feature = self.feature_names[ft_n]
@@ -164,3 +168,6 @@ class CreateData(DataGen):
         setattr(getattr(self.objs[obj_name].obj, dict_)[key], atr, value)
       else:
         setattr(self.objs[self.curr_obj], feature, value)
+
+    co_3d_2d = self.create_annotations(obj)
+    print(len(co_3d_2d))

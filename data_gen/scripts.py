@@ -1,7 +1,9 @@
 import bpy
+import numpy as np
 from math import dist
 from match import get_vertices_coords
 from mathutils.bvhtree import BVHTree
+from PIL import Image
 
 def create_camera_plane():
   # objects
@@ -150,3 +152,24 @@ def create_background():
   links.new(node_background.outputs["Background"], node_output.inputs["Surface"])
 
   return node_environment
+
+def create_mask():
+  old_engine = bpy.data.scenes[0].render.engine
+  old_value = bpy.data.materials["Material.001"].node_tree.nodes["Principled BSDF"].inputs[21].default_value
+
+  # set settings to take the snapshot
+  bpy.data.scenes[0].render.engine = "BLENDER_EEVEE"
+  bpy.data.materials["Material.001"].node_tree.nodes["Principled BSDF"].inputs[21].default_value = 0
+
+  # save image in tmp
+  bpy.context.scene.render.filepath = '/tmp/img_tmp.png'
+  bpy.ops.render.render(write_still=True)
+
+  # open tmp image
+  img = Image.open('/tmp/img_tmp.png')
+
+  # set the values back
+  bpy.data.scenes[0].render.engine = old_engine
+  bpy.data.materials["Material.001"].node_tree.nodes["Principled BSDF"].inputs[21].default_value = old_value
+
+  return np.array(img.convert('1'))
