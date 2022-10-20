@@ -3,6 +3,8 @@ import bpy
 from bpy_extras.object_utils import world_to_camera_view
 from mathutils import Vector
 import numpy as np
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 def vert_coord_to_2d(points, camera, scene):
@@ -28,11 +30,18 @@ def _2d_to_pixel_coords(scene, co_2d):
 def get_vertices_coords(obj):
   return [Vector((v.x, v.y, v.z)) for v in [obj.matrix_world @ v.co for v in obj.data.vertices]]
 
+"""
 def get_coordinates_matches(global_vertices, camera, scene):
   co_2d = vert_coord_to_2d(global_vertices, camera, scene)
   co_3d_2d = list(zip(global_vertices, co_2d))
 
   return co_3d_2d
+"""
+def get_coordinates_matches(faces4_co3, camera, scene):
+  faces4_co2 = []
+  for vertices in faces4_co3:
+    faces4_co2.append(vert_coord_to_2d(vertices, camera, scene))
+  return list(zip(faces4_co3, faces4_co2))
 
 def visualize_vertices(vertices, W=1920, H=1080, path='fig.png'):
   co_2d = np.array(vertices)

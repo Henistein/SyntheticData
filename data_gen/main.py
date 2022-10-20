@@ -35,7 +35,7 @@ if __name__ == '__main__':
   # import sign object
   #bpy.ops.import_scene.obj(filepath="models/stop_sign.obj")
   #obj = bpy.data.objects['Stop']
-  bpy.ops.import_scene.obj(filepath="models/sofa_5k.obj")
+  bpy.ops.import_scene.obj(filepath="models/sofa_teste.obj")
   obj = bpy.data.objects['Sofa']
 
   # reset objects position
@@ -81,13 +81,9 @@ if __name__ == '__main__':
   # background
   node_environment = create_background()
 
-  mask = create_mask()
-  print(mask)
-
-
   # -------------------------------------------
-if 1==0:
-  path = '/home/socialab/Henrique/DATA/teste'
+if 1==1:
+  path = '/home/henistein/Downloads/'
 
   dg = data_gen.CreateData(bpy, path, debug=True)
 
@@ -112,4 +108,5 @@ if 1==0:
   # Generate and create data
   dg.generate(10)
   #dg.create_data(obj)
-  dg.create_random_sample(obj)
+  dg.create_random_sample(obj, environment=node_environment)
+

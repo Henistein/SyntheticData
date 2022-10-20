@@ -4,6 +4,7 @@ from math import dist
 from match import get_vertices_coords
 from mathutils.bvhtree import BVHTree
 from PIL import Image
+import cv2
 
 def create_camera_plane():
   # objects
@@ -113,12 +114,25 @@ def get_visible_mesh(bpy, plane, obj, visualize=False):
     bpy.ops.mesh.select_all(action='DESELECT')
     bpy.ops.object.editmode_toggle()
 
+  # vertices
+  """
   ret = set()
   for face in obj.data.polygons:
     if face.index in mesh_2_polys_ints:
       for v in face.vertices:
         if visualize: obj.data.vertices[v].select = True
         ret.add(tuple(obj.matrix_world @ obj.data.vertices[v].co))
+  """
+
+  # faces
+  ret = []
+  for face in obj.data.polygons:
+    if face.index in mesh_2_polys_ints:
+      aux = []
+      for v in face.vertices:
+        if visualize: obj.data.vertices[v].select = True
+        aux.append(tuple(obj.matrix_world @ obj.data.vertices[v].co))
+      ret.append(aux)
 
   # remove plane
   bpy.context.view_layer.objects.active = plane
@@ -153,23 +167,34 @@ def create_background():
 
   return node_environment
 
-def create_mask():
+def create_mask(node_environment):
+  mat = "None"
   old_engine = bpy.data.scenes[0].render.engine
-  old_value = bpy.data.materials["Material.001"].node_tree.nodes["Principled BSDF"].inputs[21].default_value
+  old_value = bpy.data.materials[mat].node_tree.nodes["Principled BSDF"].inputs[21].default_value
+  old_img = node_environment.image
 
   # set settings to take the snapshot
   bpy.data.scenes[0].render.engine = "BLENDER_EEVEE"
-  bpy.data.materials["Material.001"].node_tree.nodes["Principled BSDF"].inputs[21].default_value = 0
+  bpy.data.materials[mat].node_tree.nodes["Principled BSDF"].inputs[21].default_value = 0
+  node_environment.image = None
 
   # save image in tmp
   bpy.context.scene.render.filepath = '/tmp/img_tmp.png'
   bpy.ops.render.render(write_still=True)
 
   # open tmp image
-  img = Image.open('/tmp/img_tmp.png')
+  #img = Image.open('/tmp/img_tmp.png')
+  img = cv2.imread('/tmp/img_tmp.png')
+  img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+  _, img = cv2.threshold(img, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+  #img = cv2.GaussianBlur(img, (5,5), 0)
+  #img = cv2.adaptiveThreshold(img, 255, 1, 1, 11, 2)
+  #cv2.imshow('', img)
+  #cv2.waitKey(0)
 
   # set the values back
   bpy.data.scenes[0].render.engine = old_engine
-  bpy.data.materials["Material.001"].node_tree.nodes["Principled BSDF"].inputs[21].default_value = old_value
+  bpy.data.materials[mat].node_tree.nodes["Principled BSDF"].inputs[21].default_value = old_value
+  node_environment.image = old_img
 
-  return np.array(img.convert('1'))
+  return img

@@ -2,11 +2,13 @@
 import os
 import numpy as np
 from match import filter_non_visible_coords, filter_repeated_coords, get_coordinates_matches, visualize_vertices
-from scripts import cut_obj_camera_view, get_visible_mesh
+from scripts import cut_obj_camera_view, get_visible_mesh, create_mask
 
 from math import prod, radians
 from random import shuffle, choice
-from copy import deepcopy
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
+from tqdm import tqdm
 
 class ListStruct:
   def __init__(self, lst, total_combs):
@@ -107,21 +109,55 @@ class CreateData(DataGen):
   def generate(self, ammount):
     self.generated_data = super().generate(ammount)
   
-  def create_annotations(self, obj):
+  def create_annotations(self, obj, environment):
     # visible mesh
     new_plane = cut_obj_camera_view(self.blender, self.blender.data.objects['Plane'], obj)
-    visible_mesh = get_visible_mesh(self.blender, new_plane, obj)
+    visible_faces = get_visible_mesh(self.blender, new_plane, obj)
 
-    co_3d_2d = get_coordinates_matches(
-      visible_mesh,
+    faces_pixels = get_coordinates_matches(
+      visible_faces,
       self.blender.data.objects['Camera'],
       self.blender.context.scene
     )
-    co_3d_2d = filter_non_visible_coords(co_3d_2d)
-    co_3d_2d = filter_repeated_coords(co_3d_2d)
-    return co_3d_2d
+    #co_2d = list(zip(*faces_pixels))[1]
+    #co_2d = [item for sublist in co_2d for item in sublist]
+    #visualize_vertices([item for sublist in co_2d for item in sublist])
+    
+    # create mask
+    M = np.zeros((1920, 1080, 13))
+    mask = create_mask(environment).T
+    print(mask.shape)
+
+        
+    for faces,pixels in faces_pixels:
+      flat_faces = [item for sublist in faces for item in sublist]
+      for p in pixels:
+        M[p[0], p[1], 0] = 1
+        M[p[0], p[1], 1:] = flat_faces
+
+    left_pixels = []
+    for i in range(1920):
+      for j in range(1080):
+        if mask[i, j] != 0 and M[i, j, 0] == 0:
+          M[i, j, 0] = -1
+        elif mask[i, j] == 0 and M[i, j, 0] == 0:
+          left_pixels.append([i, j])
+    
+    faces, quad_pix = list(zip(*faces_pixels))
+    for p in tqdm(left_pixels):
+      # check which quadrilateral p fits in
+      for i,quad in enumerate(quad_pix):
+        point = Point(p)
+        polygon = Polygon(quad)
+        if polygon.within(point):
+          M[p[0], p[1], 0] = 1
+          M[p[0], p[1], 1:] = [item for sublist in faces[i] for item in sublist] 
+
+
+
+
   
-  def create_data(self, obj):
+  def create_data(self, obj, environment=None):
     assert self.generated_data is not None, 'No data generated!'
     self.image_index = 0
     for data in self.generated_data:
@@ -145,7 +181,7 @@ class CreateData(DataGen):
       self.image_index += 1
 
       # create annotations
-      co_3d_2d = self.create_annotations(obj)
+      co_3d_2d = self.create_annotations(obj, environment)
 
       if self.debug:
         co_2d = list(zip(*co_3d_2d))[1]
@@ -154,7 +190,7 @@ class CreateData(DataGen):
       # save coordinates matches in npy format
       np.save(self.destination_path+f"/annotations/a{index}.npy", co_3d_2d)
 
-  def create_random_sample(self, obj):
+  def create_random_sample(self, obj, environment=None):
     data = choice(self.generated_data)
     for ft_n, value in enumerate(data):
       feature = self.feature_names[ft_n]
@@ -169,5 +205,4 @@ class CreateData(DataGen):
       else:
         setattr(self.objs[self.curr_obj], feature, value)
 
-    co_3d_2d = self.create_annotations(obj)
-    print(len(co_3d_2d))
+    return self.create_annotations(obj, environment)
