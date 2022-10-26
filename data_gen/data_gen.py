@@ -2,12 +2,14 @@
 import os
 import numpy as np
 from match import filter_non_visible_coords, filter_repeated_coords, get_coordinates_matches, visualize_vertices
-from scripts import cut_obj_camera_view, get_visible_mesh, create_mask
+from scripts import cut_obj_camera_view, get_polygon_indexes, get_visible_mesh, create_mask
 
 from math import prod, radians
 from random import shuffle, choice
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
+from PIL import Image
+from mathutils import Vector
 from tqdm import tqdm
 
 class ListStruct:
@@ -119,12 +121,33 @@ class CreateData(DataGen):
       self.blender.data.objects['Camera'],
       self.blender.context.scene
     )
+    
+    # create matrix
+    M = np.zeros((1080, 1920, 13))
+    C = np.zeros((1080, 1920), dtype=np.uint8)
+    for face,co_2d in faces_pixels:
+      #co_2d = [tuple(obj.matrix_world @ Vector(co)) for co in co_2d]
+      indices = get_polygon_indexes(co_2d)
+      for i,j in indices:
+        if i >= 1920 or j >= 1080:
+          print(f'Skiped index ({i},{j}')
+          continue
+        j = abs(1080-j)
+        M[j, i, 0] = 1
+        M[j, i, 1:] = [item for sublist in face for item in sublist] 
+
+        C[j, i] = 255
+    
+    img = Image.fromarray(C) 
+    img.save('matrix.PNG')
+
+    #return faces_pixels
     #co_2d = list(zip(*faces_pixels))[1]
     #co_2d = [item for sublist in co_2d for item in sublist]
     #visualize_vertices([item for sublist in co_2d for item in sublist])
     
     # create mask
-    M = np.zeros((1920, 1080, 13))
+    """
     mask = create_mask(environment).T
     print(mask.shape)
 
@@ -155,6 +178,7 @@ class CreateData(DataGen):
 
 
 
+    """
 
   
   def create_data(self, obj, environment=None):

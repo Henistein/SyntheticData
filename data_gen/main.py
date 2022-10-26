@@ -35,7 +35,7 @@ if __name__ == '__main__':
   # import sign object
   #bpy.ops.import_scene.obj(filepath="models/stop_sign.obj")
   #obj = bpy.data.objects['Stop']
-  bpy.ops.import_scene.obj(filepath="models/sofa_teste.obj")
+  bpy.ops.import_scene.obj(filepath="models/sofa_1020.obj")
   obj = bpy.data.objects['Sofa']
 
   # reset objects position
@@ -108,5 +108,5 @@ if 1==1:
   # Generate and create data
   dg.generate(10)
   #dg.create_data(obj)
-  dg.create_random_sample(obj, environment=node_environment)
-
+  annotations = dg.create_random_sample(obj, environment=node_environment)
+  print(annotations)
