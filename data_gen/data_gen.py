@@ -1,6 +1,7 @@
 #import pandas as pd
 import os
 import numpy as np
+import pickle
 from match import filter_non_visible_coords, filter_repeated_coords, get_coordinates_matches, visualize_vertices
 from scripts import cut_obj_camera_view, get_polygon_indexes, get_visible_mesh, create_mask
 
@@ -114,7 +115,7 @@ class CreateData(DataGen):
   def create_annotations(self, obj, environment):
     # visible mesh
     new_plane = cut_obj_camera_view(self.blender, self.blender.data.objects['Plane'], obj)
-    visible_faces = get_visible_mesh(self.blender, new_plane, obj)
+    visible_faces = get_visible_mesh(self.blender, new_plane, obj, visualize=True)
 
     faces_pixels = get_coordinates_matches(
       visible_faces,
@@ -123,23 +124,51 @@ class CreateData(DataGen):
     )
     
     # create matrix
-    M = np.zeros((1080, 1920, 13))
-    C = np.zeros((1080, 1920), dtype=np.uint8)
+    M = np.zeros((1080, 1920), dtype=np.int64)
+    C = np.zeros((1080, 1920, 3))
+    F = {}
+    inc = 0
     for face,co_2d in faces_pixels:
       #co_2d = [tuple(obj.matrix_world @ Vector(co)) for co in co_2d]
       indices = get_polygon_indexes(co_2d)
+      color = np.random.randint(0, 255, size=(3,)).tolist()
       for i,j in indices:
         if i >= 1920 or j >= 1080:
           print(f'Skiped index ({i},{j}')
           continue
         j = abs(1080-j)
-        M[j, i, 0] = 1
-        M[j, i, 1:] = [item for sublist in face for item in sublist] 
+        face_coords = [item for sublist in face for item in sublist] 
+        F[inc] = {"face":face_coords, "color":color}
+        M[j, i] = inc
+        #M[j, i, 0] = 1
+        #M[j, i, 1:] = face_coords
 
-        C[j, i] = 255
+        C[j, i] = color
+      inc += 1
     
-    img = Image.fromarray(C) 
-    img.save('matrix.PNG')
+    # load vertices MAP
+    with open('sofa_1020.pkl', 'rb') as f:
+      MAP = pickle.load(f)
+
+    NEW_M = np.zeros((108, 192, 3))
+    NEW_C = np.zeros((108, 192, 3))
+    # perform the reduction to 10 times
+    for i in range(0, 1080, 10):
+      for j in range(0, 1920, 10):
+        most_freq = np.bincount(M[i:i+10, j:j+10].flatten()).argmax()
+        face = F[most_freq]["face"]
+        # WORLD_MATRIX * VERTICE = VTRANSFORMADO
+        # VERTICE = np.linalg.solve(WORLD_MATRIX, VTRANSFORMADO)
+        face = np.stack([np.linalg.solve(obj.matrix_world, face[i:i+3]+[1])[:-1] for i in range(0, 12, 3)]).flatten()
+        face = tuple(round(v, 3) for v in face)
+        NEW_M[i//10, j//10] = MAP[face]
+        NEW_C[i//10, j//10] = F[most_freq]["color"]
+
+    img = Image.fromarray(np.uint8(C))
+    img.save('big_matrix.PNG')
+
+    img = Image.fromarray(np.uint8(NEW_C))
+    img.save('little_matrix.PNG')
 
     #return faces_pixels
     #co_2d = list(zip(*faces_pixels))[1]
