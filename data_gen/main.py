@@ -1,10 +1,10 @@
-from distutils.log import debug
 import bpy
 
 import importlib
 import os
 import sys
 import glob
+import pickle
 
 blend_dir = os.path.dirname(bpy.data.filepath)
 if blend_dir not in sys.path:
@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
   # -------------------------------------------
 if 1==1:
-  path = '/home/henistein/Downloads/'
+  path = '/home/henistein/Downloads/teste'
 
   dg = data_gen.CreateData(bpy, path, debug=True)
 
@@ -108,5 +108,12 @@ if 1==1:
   # Generate and create data
   dg.generate(10)
   #dg.create_data(obj)
-  annotations = dg.create_random_sample(obj, environment=node_environment)
-  print(annotations)
+
+  # load vertices MAP
+  with open('sofa_1020.pkl', 'rb') as f:
+    MAP = pickle.load(f)
+  
+  dg.create_data(obj, MAP)
+
+  #annotations = dg.create_random_sample(obj, MAP=MAP)
+  #print(annotations.shape)

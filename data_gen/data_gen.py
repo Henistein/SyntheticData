@@ -1,4 +1,5 @@
 #import pandas as pd
+from __future__ import annotations
 import os
 import numpy as np
 import pickle
@@ -112,7 +113,7 @@ class CreateData(DataGen):
   def generate(self, ammount):
     self.generated_data = super().generate(ammount)
   
-  def create_annotations(self, obj, environment):
+  def create_annotations(self, obj, MAP):
     # visible mesh
     new_plane = cut_obj_camera_view(self.blender, self.blender.data.objects['Plane'], obj)
     visible_faces = get_visible_mesh(self.blender, new_plane, obj, visualize=True)
@@ -127,7 +128,7 @@ class CreateData(DataGen):
     M = np.zeros((1080, 1920), dtype=np.int64)
     C = np.zeros((1080, 1920, 3))
     F = {}
-    inc = 0
+    inc = 1
     for face,co_2d in faces_pixels:
       #co_2d = [tuple(obj.matrix_world @ Vector(co)) for co in co_2d]
       indices = get_polygon_indexes(co_2d)
@@ -140,35 +141,33 @@ class CreateData(DataGen):
         face_coords = [item for sublist in face for item in sublist] 
         F[inc] = {"face":face_coords, "color":color}
         M[j, i] = inc
-        #M[j, i, 0] = 1
-        #M[j, i, 1:] = face_coords
 
         C[j, i] = color
       inc += 1
     
-    # load vertices MAP
-    with open('sofa_1020.pkl', 'rb') as f:
-      MAP = pickle.load(f)
 
-    NEW_M = np.zeros((108, 192, 3))
+    NEW_M = np.zeros((108, 192, 4))
     NEW_C = np.zeros((108, 192, 3))
     # perform the reduction to 10 times
     for i in range(0, 1080, 10):
       for j in range(0, 1920, 10):
         most_freq = np.bincount(M[i:i+10, j:j+10].flatten()).argmax()
+        if most_freq == 0:
+          continue
         face = F[most_freq]["face"]
         # WORLD_MATRIX * VERTICE = VTRANSFORMADO
         # VERTICE = np.linalg.solve(WORLD_MATRIX, VTRANSFORMADO)
         face = np.stack([np.linalg.solve(obj.matrix_world, face[i:i+3]+[1])[:-1] for i in range(0, 12, 3)]).flatten()
         face = tuple(round(v, 3) for v in face)
-        NEW_M[i//10, j//10] = MAP[face]
+        NEW_M[i//10, j//10] = [1] + list(MAP[face])
         NEW_C[i//10, j//10] = F[most_freq]["color"]
 
-    img = Image.fromarray(np.uint8(C))
-    img.save('big_matrix.PNG')
+    return NEW_M
+    #img = Image.fromarray(np.uint8(C))
+    #img.save('big_matrix.PNG')
 
-    img = Image.fromarray(np.uint8(NEW_C))
-    img.save('little_matrix.PNG')
+    #img = Image.fromarray(np.uint8(NEW_C))
+    #img.save('little_matrix.PNG')
 
     #return faces_pixels
     #co_2d = list(zip(*faces_pixels))[1]
@@ -210,7 +209,7 @@ class CreateData(DataGen):
     """
 
   
-  def create_data(self, obj, environment=None):
+  def create_data(self, obj, MAP):
     assert self.generated_data is not None, 'No data generated!'
     self.image_index = 0
     for data in self.generated_data:
@@ -234,16 +233,18 @@ class CreateData(DataGen):
       self.image_index += 1
 
       # create annotations
-      co_3d_2d = self.create_annotations(obj, environment)
+      annotations = self.create_annotations(obj, MAP)
 
+      """
       if self.debug:
         co_2d = list(zip(*co_3d_2d))[1]
         visualize_vertices(co_2d, path=self.destination_path+f"/debug/d{index}.png")
+      """
 
       # save coordinates matches in npy format
-      np.save(self.destination_path+f"/annotations/a{index}.npy", co_3d_2d)
+      np.save(self.destination_path+f"/annotations/a{index}.npy", annotations)
 
-  def create_random_sample(self, obj, environment=None):
+  def create_random_sample(self, obj, MAP=None):
     data = choice(self.generated_data)
     for ft_n, value in enumerate(data):
       feature = self.feature_names[ft_n]
@@ -258,4 +259,4 @@ class CreateData(DataGen):
       else:
         setattr(self.objs[self.curr_obj], feature, value)
 
-    return self.create_annotations(obj, environment)
+    return self.create_annotations(obj, MAP)

@@ -126,18 +126,11 @@ def get_visible_mesh(bpy, plane, obj, visualize=False):
 
   # faces
   ret = []
-  jata = 0
   for face in obj.data.polygons:
     if face.index in mesh_2_polys_ints:
       aux = []
       for v in face.vertices:
         if visualize: obj.data.vertices[v].select = True
-        """
-        if not jata:
-          print(obj.matrix_world)
-          jata = 1
-        print(obj.data.vertices[v].co)
-        """
         aux.append(tuple(obj.matrix_world @ obj.data.vertices[v].co))
       ret.append(aux)
   # remove plane
