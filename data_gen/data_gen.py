@@ -1,5 +1,4 @@
 #import pandas as pd
-from __future__ import annotations
 import os
 import numpy as np
 import pickle
@@ -7,11 +6,10 @@ from match import filter_non_visible_coords, filter_repeated_coords, get_coordin
 from scripts import cut_obj_camera_view, get_polygon_indexes, get_visible_mesh, create_mask
 
 from math import prod, radians
+import random
 from random import shuffle, choice
-from shapely.geometry import Point
-from shapely.geometry.polygon import Polygon
+random.seed(4201)
 from PIL import Image
-from mathutils import Vector
 from tqdm import tqdm
 
 class ListStruct:
@@ -98,11 +96,13 @@ def _setattr(obj, attr_s, val):
   setattr(obj, parts[-1], val)
 
 class CreateData(DataGen):
-  def __init__(self, blender, destination_path, debug=False):
+  def __init__(self, blender, res=(1920, 1080), redux_factor=10, destination_path=None, debug=False):
     super().__init__()
     self.blender = blender
     self.destination_path = destination_path
     self.debug = debug
+    self.res = res # (W, H)
+    self.redux_factor = redux_factor
     # create image, annotations and maybe debug folders
     if not os.path.exists(destination_path): os.mkdir(destination_path)
     if not os.path.exists(destination_path+"/images"): os.mkdir(destination_path+"/images")
@@ -113,7 +113,7 @@ class CreateData(DataGen):
   def generate(self, ammount):
     self.generated_data = super().generate(ammount)
   
-  def create_annotations(self, obj, MAP):
+  def create_annotations(self, obj, MAP, output_img=False):
     # visible mesh
     new_plane = cut_obj_camera_view(self.blender, self.blender.data.objects['Plane'], obj)
     visible_faces = get_visible_mesh(self.blender, new_plane, obj, visualize=True)
@@ -125,8 +125,8 @@ class CreateData(DataGen):
     )
     
     # create matrix
-    M = np.zeros((1080, 1920), dtype=np.int64)
-    C = np.zeros((1080, 1920, 3))
+    M = np.zeros((self.res[1], self.res[0]), dtype=np.int64)
+    C = np.zeros((self.res[1], self.res[0], 3))
     F = {}
     inc = 1
     for face,co_2d in faces_pixels:
@@ -134,24 +134,25 @@ class CreateData(DataGen):
       indices = get_polygon_indexes(co_2d)
       color = np.random.randint(0, 255, size=(3,)).tolist()
       for i,j in indices:
-        if i >= 1920 or j >= 1080:
+        if not ((0 <= i < self.res[0]) and (0 <= j < self.res[1])):
           print(f'Skiped index ({i},{j}')
           continue
-        j = abs(1080-j)
+
+        j = abs(self.res[1]-1-j)
         face_coords = [item for sublist in face for item in sublist] 
         F[inc] = {"face":face_coords, "color":color}
+
         M[j, i] = inc
 
         C[j, i] = color
       inc += 1
     
-
-    NEW_M = np.zeros((108, 192, 4))
-    NEW_C = np.zeros((108, 192, 3))
+    NEW_M = np.zeros((self.res[1]//self.redux_factor, self.res[0]//self.redux_factor, 4))
+    NEW_C = np.zeros((self.res[1]//self.redux_factor, self.res[0]//self.redux_factor, 3))
     # perform the reduction to 10 times
-    for i in range(0, 1080, 10):
-      for j in range(0, 1920, 10):
-        most_freq = np.bincount(M[i:i+10, j:j+10].flatten()).argmax()
+    for i in range(0, self.res[1], self.redux_factor):
+      for j in range(0, self.res[0], self.redux_factor):
+        most_freq = np.bincount(M[i:i+self.redux_factor, j:j+self.redux_factor].flatten()).argmax()
         if most_freq == 0:
           continue
         face = F[most_freq]["face"]
@@ -159,57 +160,21 @@ class CreateData(DataGen):
         # VERTICE = np.linalg.solve(WORLD_MATRIX, VTRANSFORMADO)
         face = np.stack([np.linalg.solve(obj.matrix_world, face[i:i+3]+[1])[:-1] for i in range(0, 12, 3)]).flatten()
         face = tuple(round(v, 3) for v in face)
-        NEW_M[i//10, j//10] = [1] + list(MAP[face])
-        NEW_C[i//10, j//10] = F[most_freq]["color"]
+        NEW_M[i//self.redux_factor, j//self.redux_factor] = [1] + list(MAP[face])
+        NEW_C[i//self.redux_factor, j//self.redux_factor] = F[most_freq]["color"]
 
-    return NEW_M
-    #img = Image.fromarray(np.uint8(C))
-    #img.save('big_matrix.PNG')
+    if output_img:
+      big_img = Image.fromarray(np.uint8(C))
+      big_img.save('big_matrix.PNG')
 
-    #img = Image.fromarray(np.uint8(NEW_C))
-    #img.save('little_matrix.PNG')
+      little_img = Image.fromarray(np.uint8(NEW_C))
+      little_img.save('little_matrix.PNG')
 
-    #return faces_pixels
-    #co_2d = list(zip(*faces_pixels))[1]
-    #co_2d = [item for sublist in co_2d for item in sublist]
-    #visualize_vertices([item for sublist in co_2d for item in sublist])
-    
-    # create mask
-    """
-    mask = create_mask(environment).T
-    print(mask.shape)
+      return NEW_M, big_img, little_img
 
-        
-    for faces,pixels in faces_pixels:
-      flat_faces = [item for sublist in faces for item in sublist]
-      for p in pixels:
-        M[p[0], p[1], 0] = 1
-        M[p[0], p[1], 1:] = flat_faces
+    return (NEW_M,None,None)
 
-    left_pixels = []
-    for i in range(1920):
-      for j in range(1080):
-        if mask[i, j] != 0 and M[i, j, 0] == 0:
-          M[i, j, 0] = -1
-        elif mask[i, j] == 0 and M[i, j, 0] == 0:
-          left_pixels.append([i, j])
-    
-    faces, quad_pix = list(zip(*faces_pixels))
-    for p in tqdm(left_pixels):
-      # check which quadrilateral p fits in
-      for i,quad in enumerate(quad_pix):
-        point = Point(p)
-        polygon = Polygon(quad)
-        if polygon.within(point):
-          M[p[0], p[1], 0] = 1
-          M[p[0], p[1], 1:] = [item for sublist in faces[i] for item in sublist] 
-
-
-
-    """
-
-  
-  def create_data(self, obj, MAP):
+  def create_data(self, obj, MAP, debug=False):
     assert self.generated_data is not None, 'No data generated!'
     self.image_index = 0
     for data in self.generated_data:
@@ -228,23 +193,23 @@ class CreateData(DataGen):
 
       index = str(1000000+self.image_index)[1:]
       # save image
+      self.blender.context.scene.render.resolution_x = self.res[0]
+      self.blender.context.scene.render.resolution_y = self.res[1]
       self.blender.context.scene.render.filepath = f'{self.destination_path+"/images"}/img{index}.png' 
       self.blender.ops.render.render(write_still=True)
       self.image_index += 1
 
       # create annotations
-      annotations = self.create_annotations(obj, MAP)
+      annotations, big_img, little_img = self.create_annotations(obj, MAP, output_img=debug)
 
-      """
-      if self.debug:
-        co_2d = list(zip(*co_3d_2d))[1]
-        visualize_vertices(co_2d, path=self.destination_path+f"/debug/d{index}.png")
-      """
+      if debug:
+        big_img.save(self.destination_path+f"/debug/big_{index}.png")
+        little_img.save(self.destination_path+f"/debug/little_{index}.png")
 
       # save coordinates matches in npy format
       np.save(self.destination_path+f"/annotations/a{index}.npy", annotations)
 
-  def create_random_sample(self, obj, MAP=None):
+  def create_random_sample(self, obj, MAP=None, debug=False):
     data = choice(self.generated_data)
     for ft_n, value in enumerate(data):
       feature = self.feature_names[ft_n]
@@ -258,5 +223,7 @@ class CreateData(DataGen):
         setattr(getattr(self.objs[obj_name].obj, dict_)[key], atr, value)
       else:
         setattr(self.objs[self.curr_obj], feature, value)
+    self.blender.context.scene.render.resolution_x = self.res[0]
+    self.blender.context.scene.render.resolution_y = self.res[1]
 
-    return self.create_annotations(obj, MAP)
+    return self.create_annotations(obj, MAP, output_img=debug)

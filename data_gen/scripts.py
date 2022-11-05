@@ -4,7 +4,7 @@ from math import dist
 from match import get_vertices_coords
 from mathutils.bvhtree import BVHTree
 from PIL import Image
-import cv2
+#import cv2
 
 def create_camera_plane():
   # objects
@@ -51,7 +51,7 @@ def cut_obj_camera_view(bpy, plane, obj):
   bpy.ops.mesh.flip_normals()
 
   # subdivie plane 8 times
-  for _ in range(7):
+  for _ in range(8):
     bpy.ops.mesh.subdivide()
   bpy.ops.object.editmode_toggle()
 
@@ -70,25 +70,6 @@ def cut_obj_camera_view(bpy, plane, obj):
   bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
 
   return new_plane
-
-  """
-  # Boolean
-  bpy.ops.object.modifier_add(type='BOOLEAN')
-  bpy.context.object.modifiers["Boolean"].operation = 'INTERSECT'
-  bpy.context.object.modifiers["Boolean"].use_self = True
-  bpy.context.object.modifiers["Boolean"].use_hole_tolerant = True
-  bpy.context.object.modifiers["Boolean"].object = obj
-  bpy.ops.object.modifier_apply(modifier="Boolean")
-
-  bpy.context.view_layer.update()
-
-  # save new_plane coordinates and then remove it
-  co_3d = get_vertices_coords(new_plane)
-  bpy.context.view_layer.objects.active = new_plane
-  bpy.ops.object.delete()
-
-  return co_3d
-  """
 
 def get_visible_mesh(bpy, plane, obj, visualize=False):
   m_1 = plane.matrix_world.copy()
@@ -134,7 +115,8 @@ def get_visible_mesh(bpy, plane, obj, visualize=False):
         aux.append(tuple(obj.matrix_world @ obj.data.vertices[v].co))
       ret.append(aux)
   # remove plane
-  bpy.context.view_layer.objects.active = plane
+  #bpy.context.view_layer.objects.active = plane
+  bpy.data.objects['Plane.001'].select_set(True)
   bpy.ops.object.delete()
 
   return ret

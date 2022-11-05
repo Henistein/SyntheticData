@@ -1,0 +1,14 @@
+- Gerar 33K de imagens e anotacoes para cada objeto 3D
+  - Trabalhar as meshes
+  - Verificar a variabilidade de fatores
+  - Adicionar pelo menos 20 backgrounds
+
+- Criar a arquitetura do PROF
+  - Converter a malha 3d para um conjunto de 10 imagens
+  - Uma branch extrai as features da malha mas retorna uma imagem no final
+  - Outra branch extrai as features da imagem
+  - Concatenamos essas imagens e aplicamos mais uma serie de layers para fazer a extracao de features, esta layer pode ser semelhante/igual a ResNet
+- Criar a minha arquitetura e fazer as ligacoes para o upsampling
+- Fazer a funcao de treino (funcao loss da classificacao e da regressao, basear-me no YOLO, ter atencao ao problema dos dados nao balanceados)
+- Treinar
+- Mostrar Resultados de uma forma visual

@@ -83,9 +83,9 @@ if __name__ == '__main__':
 
   # -------------------------------------------
 if 1==1:
-  path = '/home/henistein/Downloads/teste'
+  path = '/home/socialab/Henrique/DATA/sofa'
 
-  dg = data_gen.CreateData(bpy, path, debug=True)
+  dg = data_gen.CreateData(bpy, res=(640, 360), redux_factor=5, destination_path=path, debug=True)
 
   # add empty obj (camera)
   dg.add_obj('empty', bpy.data.objects['Empty'])
@@ -106,14 +106,16 @@ if 1==1:
   dg.add_elements('image', list(map(bpy.data.images.load, glob.glob('backgrounds/*'))))
 
   # Generate and create data
-  dg.generate(10)
+  dg.generate(25)
   #dg.create_data(obj)
 
   # load vertices MAP
   with open('sofa_1020.pkl', 'rb') as f:
     MAP = pickle.load(f)
+    f.close()
   
-  dg.create_data(obj, MAP)
+  #dg.create_data(obj, MAP, debug=True)
+  dg.create_random_sample(obj, MAP=MAP, debug=True)
 
   #annotations = dg.create_random_sample(obj, MAP=MAP)
   #print(annotations.shape)
