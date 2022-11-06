@@ -2,10 +2,11 @@ import bpy
 import pickle
 
 MAP = {}
-name = "teste"
+name = "airplane"
 
 bpy.ops.import_scene.obj(filepath=f"models/{name}.obj")
-obj = bpy.data.objects[-1]
+#obj = bpy.data.objects[-1]
+obj = bpy.data.objects['AirPlane']
 
 vertices = list(obj.data.vertices)
 
@@ -15,7 +16,7 @@ for face in list(obj.data.polygons):
   MAP[flat] = tuple(face.center)
 
 # save dict
-with open(f'{name}.pkl', 'wb') as f:
+with open(f'pkls/{name}.pkl', 'wb') as f:
   pickle.dump(MAP, f)
         
 """

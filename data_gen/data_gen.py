@@ -8,7 +8,7 @@ from scripts import cut_obj_camera_view, get_polygon_indexes, get_visible_mesh, 
 from math import prod, radians
 import random
 from random import shuffle, choice
-random.seed(4201)
+#random.seed(420)
 from PIL import Image
 from tqdm import tqdm
 

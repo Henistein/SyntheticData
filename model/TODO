@@ -1,7 +1,6 @@
 - Gerar 33K de imagens e anotacoes para cada objeto 3D
   - Trabalhar as meshes
   - Verificar a variabilidade de fatores (adicionar rotacao)
-  - Ver se consigo suavizar as meshes com retopologia
   - Explorar a funcao bvh tree overlap
 
 - Criar a arquitetura do PROF

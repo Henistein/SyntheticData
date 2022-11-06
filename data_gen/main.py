@@ -21,6 +21,9 @@ from math import radians, dist
 import numpy as np
 import matplotlib.pyplot as plt
 
+name = 'airplane'
+obj_name = 'AirPlane'
+
 if __name__ == '__main__':
   bpy.data.scenes[0].render.engine = "CYCLES"
   bpy.context.scene.cycles.device = "GPU"
@@ -35,8 +38,8 @@ if __name__ == '__main__':
   # import sign object
   #bpy.ops.import_scene.obj(filepath="models/stop_sign.obj")
   #obj = bpy.data.objects['Stop']
-  bpy.ops.import_scene.obj(filepath="models/teste.obj")
-  obj = bpy.data.objects['Stop']
+  bpy.ops.import_scene.obj(filepath=f"models/{name}.obj")
+  obj = bpy.data.objects[obj_name]
 
   # reset objects position
   obj.location.x = 0
@@ -83,7 +86,7 @@ if __name__ == '__main__':
 
   # -------------------------------------------
 if 1==1:
-  path = '/home/henistein/programming/UBI/DATA'
+  path = '/home/henistein/Downloads/teste'
 
   dg = data_gen.CreateData(bpy, res=(640, 360), redux_factor=5, destination_path=path, debug=True)
 
@@ -101,6 +104,11 @@ if 1==1:
   dg.add_feature("location.y", -10, 10, 4)
   dg.add_feature("location.z", -5, 5, 2)
 
+  # rotation
+  dg.add_feature("rotation.x", 90, 100, 2, radians)
+  dg.add_feature("rotation.y", -180, 180, 36, radians)
+  dg.add_feature("rotation.z", 80, 100, 5, radians)
+
   # add background object
   dg.add_obj('node_environment', node_environment)
   dg.add_elements('image', list(map(bpy.data.images.load, glob.glob('backgrounds/*'))))
@@ -110,7 +118,7 @@ if 1==1:
   #dg.create_data(obj)
 
   # load vertices MAP
-  with open('teste.pkl', 'rb') as f:
+  with open(f'pkls/{name}.pkl', 'rb') as f:
     MAP = pickle.load(f)
     f.close()
   
