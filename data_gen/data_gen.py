@@ -158,7 +158,7 @@ class CreateData(DataGen):
         face = F[most_freq]["face"]
         # WORLD_MATRIX * VERTICE = VTRANSFORMADO
         # VERTICE = np.linalg.solve(WORLD_MATRIX, VTRANSFORMADO)
-        face = np.stack([np.linalg.solve(obj.matrix_world, face[i:i+3]+[1])[:-1] for i in range(0, 12, 3)]).flatten()
+        face = np.stack([np.linalg.solve(obj.matrix_world, face[i:i+3]+[1])[:-1] for i in range(0, len(face), 3)]).flatten()
         face = tuple(round(v, 3) for v in face)
         NEW_M[i//self.redux_factor, j//self.redux_factor] = [1] + list(MAP[face])
         NEW_C[i//self.redux_factor, j//self.redux_factor] = F[most_freq]["color"]

@@ -2,7 +2,7 @@ import bpy
 import pickle
 
 MAP = {}
-name = "sofa_1020"
+name = "teste"
 
 bpy.ops.import_scene.obj(filepath=f"models/{name}.obj")
 obj = bpy.data.objects[-1]

@@ -181,7 +181,7 @@ def create_mask(node_environment):
   return img
 
 
-def order_points_new(pts):
+def order_quad_points(pts):
   # sort the points based on their x-coordinates
   xSorted = pts[np.argsort(pts[:, 0]), :]
 
@@ -251,11 +251,11 @@ def get_polygon_indexes(coords):
   t1, t2 = zip(*coords)
   w = max(t1) - min(t1) + 6
   h = max(t2) - min(t2) + 6
+  assert len(t1) == len(t2), "len(t1) == len(t2)"
 
-  M = np.zeros((w, h))
-
-  coords = np.array([(t1[i]-min(t1)+3, t2[i]-min(t2)+3) for i in range(4)])
-  clockwise_coords = order_points_new(coords)
+  coords = np.array([(t1[i]-min(t1)+3, t2[i]-min(t2)+3) for i in range(len(t1))])
+  print(coords.tolist())
+  clockwise_coords = order_quad_points(coords)
   matrix = create_polygon((w, h), clockwise_coords)
   ind_x, ind_y = np.where(matrix == 1)
   indices = list(zip(ind_x, ind_y))

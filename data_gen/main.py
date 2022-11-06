@@ -35,8 +35,8 @@ if __name__ == '__main__':
   # import sign object
   #bpy.ops.import_scene.obj(filepath="models/stop_sign.obj")
   #obj = bpy.data.objects['Stop']
-  bpy.ops.import_scene.obj(filepath="models/sofa_1020.obj")
-  obj = bpy.data.objects['Sofa']
+  bpy.ops.import_scene.obj(filepath="models/teste.obj")
+  obj = bpy.data.objects['Stop']
 
   # reset objects position
   obj.location.x = 0
@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
   # -------------------------------------------
 if 1==1:
-  path = '/home/socialab/Henrique/DATA/sofa'
+  path = '/home/henistein/programming/UBI/DATA'
 
   dg = data_gen.CreateData(bpy, res=(640, 360), redux_factor=5, destination_path=path, debug=True)
 
@@ -110,7 +110,7 @@ if 1==1:
   #dg.create_data(obj)
 
   # load vertices MAP
-  with open('sofa_1020.pkl', 'rb') as f:
+  with open('teste.pkl', 'rb') as f:
     MAP = pickle.load(f)
     f.close()
   
