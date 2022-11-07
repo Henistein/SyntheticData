@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
   # -------------------------------------------
 if 1==1:
-  path = '/home/henistein/Downloads/teste'
+  path = '/home/henistein/teste'
 
   dg = data_gen.CreateData(bpy, res=(640, 360), redux_factor=5, destination_path=path, debug=True)
 
@@ -100,30 +100,39 @@ if 1==1:
   # add obj
   dg.add_obj('obj', obj)
   # location
-  dg.add_feature("location.x", -20, 0, 4)
+  dg.add_feature("location.x", -10, 0, 2)
   dg.add_feature("location.y", -10, 10, 4)
   dg.add_feature("location.z", -5, 5, 2)
 
   # rotation
-  dg.add_feature("rotation.x", 90, 100, 2, radians)
-  dg.add_feature("rotation.y", -180, 180, 36, radians)
-  dg.add_feature("rotation.z", 80, 100, 5, radians)
+  dg.add_feature("rotation_euler.x", 90, 100, 2, radians)
+  dg.add_feature("rotation_euler.y", -180, 180, 36, radians)
+  dg.add_feature("rotation_euler.z", 80, 100, 5, radians)
 
   # add background object
   dg.add_obj('node_environment', node_environment)
   dg.add_elements('image', list(map(bpy.data.images.load, glob.glob('backgrounds/*'))))
 
   # Generate and create data
-  dg.generate(25)
-  #dg.create_data(obj)
+  dg.generate(35000)
 
   # load vertices MAP
-  with open(f'pkls/{name}.pkl', 'rb') as f:
+  with open(f'pkls/{name}_map.pkl', 'rb') as f:
     MAP = pickle.load(f)
+    f.close()
+
+  # load vertices TREE
+  with open(f'pkls/{name}_tree.pkl', 'rb') as f:
+    TREE = pickle.load(f)
+    f.close()
+
+  # load list TREE
+  with open(f'pkls/{name}_list.pkl', 'rb') as f:
+    LST = pickle.load(f)
     f.close()
   
   #dg.create_data(obj, MAP, debug=True)
-  dg.create_random_sample(obj, MAP=MAP, debug=True)
+  dg.create_random_sample(obj, MAP=MAP, TREE=TREE, LST=LST, debug=True)
 
   #annotations = dg.create_random_sample(obj, MAP=MAP)
   #print(annotations.shape)
