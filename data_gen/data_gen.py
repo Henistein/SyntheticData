@@ -202,7 +202,7 @@ class CreateData(DataGen):
       self.image_index += 1
 
       # create annotations
-      annotations, big_img, little_img = self.create_annotations(obj, MAP, TREE, LST, output_img=debug)
+      annotations, big_img, little_img = self.create_annotations(obj, output_img=debug)
 
       if debug:
         big_img.save(self.destination_path+f"/debug/big_{index}.png")

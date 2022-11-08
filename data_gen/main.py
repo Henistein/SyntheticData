@@ -4,7 +4,7 @@ import importlib
 import os
 import sys
 import glob
-import pickle
+import yaml
 
 blend_dir = os.path.dirname(bpy.data.filepath)
 if blend_dir not in sys.path:
@@ -13,18 +13,13 @@ if blend_dir not in sys.path:
 import scripts
 from scripts import *
 import data_gen
-from match import filter_non_visible_coords, filter_repeated_coords, get_coordinates_matches, visualize_vertices
 importlib.reload(scripts)
 importlib.reload(data_gen)
 
-from math import radians, dist
-import numpy as np
-import matplotlib.pyplot as plt
-
-name = 'airplane'
-obj_name = 'AirPlane'
+from math import radians
 
 if __name__ == '__main__':
+  conf = yaml.safe_load(open('conf.yaml'))
   bpy.data.scenes[0].render.engine = "CYCLES"
   bpy.context.scene.cycles.device = "GPU"
 
@@ -38,8 +33,8 @@ if __name__ == '__main__':
   # import sign object
   #bpy.ops.import_scene.obj(filepath="models/stop_sign.obj")
   #obj = bpy.data.objects['Stop']
-  bpy.ops.import_scene.obj(filepath=f"models/{name}.obj")
-  obj = bpy.data.objects[obj_name]
+  bpy.ops.import_scene.obj(filepath=f"models/{conf['NAME']}.obj")
+  obj = bpy.data.objects[conf['OBJ_NAME']]
 
   # reset objects position
   obj.location.x = 0
@@ -85,8 +80,7 @@ if __name__ == '__main__':
   node_environment = create_background()
 
   # -------------------------------------------
-if 1==1:
-  path = '/home/henistein/teste'
+  path = conf["PATH"]
 
   dg = data_gen.CreateData(bpy, res=(640, 360), redux_factor=5, destination_path=path, debug=True)
 
