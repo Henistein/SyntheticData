@@ -131,8 +131,8 @@ if 1==1:
     LST = pickle.load(f)
     f.close()
   
-  #dg.create_data(obj, MAP, debug=True)
-  dg.create_random_sample(obj, MAP=MAP, TREE=TREE, LST=LST, debug=True)
+  dg.create_data(obj, MAP, TREE, LST, debug=True)
+  #dg.create_random_sample(obj, MAP=MAP, TREE=TREE, LST=LST, debug=True)
 
   #annotations = dg.create_random_sample(obj, MAP=MAP)
   #print(annotations.shape)

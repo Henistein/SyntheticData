@@ -10,7 +10,6 @@ import random
 from random import shuffle, choice
 random.seed(422)
 from PIL import Image
-from tqdm import tqdm
 
 class ListStruct:
   def __init__(self, lst, total_combs):
@@ -185,7 +184,7 @@ class CreateData(DataGen):
 
     return (NEW_M,None,None)
 
-  def create_data(self, obj, MAP, debug=False):
+  def create_data(self, obj, MAP, TREE, LST, debug=False):
     assert self.generated_data is not None, 'No data generated!'
     self.image_index = 0
     for data in self.generated_data:
@@ -211,7 +210,7 @@ class CreateData(DataGen):
       self.image_index += 1
 
       # create annotations
-      annotations, big_img, little_img = self.create_annotations(obj, MAP, output_img=debug)
+      annotations, big_img, little_img = self.create_annotations(obj, MAP, TREE, LST, output_img=debug)
 
       if debug:
         big_img.save(self.destination_path+f"/debug/big_{index}.png")
