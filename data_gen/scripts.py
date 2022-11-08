@@ -69,6 +69,7 @@ def cut_obj_camera_view(bpy, plane, obj):
   bpy.context.object.modifiers["Shrinkwrap"].target = obj
   bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
 
+
   return new_plane
 
 def get_visible_mesh(bpy, plane, obj, visualize=False):
@@ -270,7 +271,29 @@ def get_polygon_indexes(coords):
   else:
     clockwise_coords = order_tri_points(coords)
   matrix = create_polygon((w, h), clockwise_coords)
+  """
+  if matrix.flatten().sum() == 0:
+    print('AQUI')
+    print(len(coords))
+    print(clockwise_coords)
+    print(matrix)
+    clockwise_coords = np.array([[3, 4],[5,6],[4,4],[3,3]])
+    matrix = create_polygon((w, h), clockwise_coords)
+    print(matrix) 
+    exit()
+  """
+
   ind_x, ind_y = np.where(matrix == 1)
   indices = list(zip(ind_x, ind_y))
   indices = [(t[0]+min(t1)-3, t[1]+min(t2)-3) for t in indices]
   return indices
+
+def centroid(vertexes):
+  x_list = [vertex[0] for vertex in vertexes]
+  y_list = [vertex[1] for vertex in vertexes]
+  z_list = [vertex[2] for vertex in vertexes]
+  _len = len(vertexes)
+  x = sum(x_list) / _len
+  y = sum(y_list) / _len
+  z = sum(z_list) / _len
+  return(x, y, z)

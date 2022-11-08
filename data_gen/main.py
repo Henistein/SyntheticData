@@ -116,23 +116,8 @@ if 1==1:
   # Generate and create data
   dg.generate(35000)
 
-  # load vertices MAP
-  with open(f'pkls/{name}_map.pkl', 'rb') as f:
-    MAP = pickle.load(f)
-    f.close()
-
-  # load vertices TREE
-  with open(f'pkls/{name}_tree.pkl', 'rb') as f:
-    TREE = pickle.load(f)
-    f.close()
-
-  # load list TREE
-  with open(f'pkls/{name}_list.pkl', 'rb') as f:
-    LST = pickle.load(f)
-    f.close()
-  
-  dg.create_data(obj, MAP, TREE, LST, debug=True)
-  #dg.create_random_sample(obj, MAP=MAP, TREE=TREE, LST=LST, debug=True)
+  #dg.create_data(obj, MAP, TREE, LST, debug=True)
+  dg.create_random_sample(obj, debug=True)
 
   #annotations = dg.create_random_sample(obj, MAP=MAP)
   #print(annotations.shape)

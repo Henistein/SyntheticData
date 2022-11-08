@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pickle
 from match import filter_non_visible_coords, filter_repeated_coords, get_coordinates_matches, visualize_vertices
-from scripts import cut_obj_camera_view, get_polygon_indexes, get_visible_mesh, create_mask
+from scripts import cut_obj_camera_view, get_polygon_indexes, get_visible_mesh, create_mask, centroid
 
 from math import prod, radians
 import random
@@ -112,7 +112,7 @@ class CreateData(DataGen):
   def generate(self, ammount):
     self.generated_data = super().generate(ammount)
   
-  def create_annotations(self, obj, MAP, TREE, LST, output_img=False):
+  def create_annotations(self, obj, output_img=False):
     # visible mesh
     new_plane = cut_obj_camera_view(self.blender, self.blender.data.objects['Plane'], obj)
     visible_faces = get_visible_mesh(self.blender, new_plane, obj, visualize=True)
@@ -158,17 +158,9 @@ class CreateData(DataGen):
         # WORLD_MATRIX * VERTICE = VTRANSFORMADO
         # VERTICE = np.linalg.solve(WORLD_MATRIX, VTRANSFORMADO)
         face = np.stack([np.linalg.solve(obj.matrix_world, face[i:i+3]+[1])[:-1] for i in range(0, len(face), 3)]).flatten()
-        face = tuple(round(v, 3) for v in face)
-        try:
-          center = list(MAP[face])
-        except KeyError:
-          # if fails, we search in the tree for the closest vertice value
-          new_key = []
-          for v in range(0, 12, 3):
-            _, ind = TREE.query([face[v:v+3]], k=1)
-            for item in LST[ind.item()]:
-              new_key.append(round(item, 3))
-          center = list(MAP[tuple(new_key)])
+        face = [face[k:k+3] for k in range(0,len(face),3)]
+        # calculate centroid
+        center = list(centroid(face))
 
         NEW_M[i//self.redux_factor, j//self.redux_factor] = [1] + center
         NEW_C[i//self.redux_factor, j//self.redux_factor] = F[most_freq]["color"]
@@ -184,7 +176,7 @@ class CreateData(DataGen):
 
     return (NEW_M,None,None)
 
-  def create_data(self, obj, MAP, TREE, LST, debug=False):
+  def create_data(self, obj, debug=False):
     assert self.generated_data is not None, 'No data generated!'
     self.image_index = 0
     for data in self.generated_data:
@@ -219,7 +211,7 @@ class CreateData(DataGen):
       # save coordinates matches in npy format
       np.save(self.destination_path+f"/annotations/a{index}.npy", annotations)
 
-  def create_random_sample(self, obj, MAP=None, TREE=None, LST=None, debug=False):
+  def create_random_sample(self, obj, debug=False):
     data = choice(self.generated_data)
     for ft_n, value in enumerate(data):
       feature = self.feature_names[ft_n]
@@ -236,4 +228,4 @@ class CreateData(DataGen):
     self.blender.context.scene.render.resolution_x = self.res[0]
     self.blender.context.scene.render.resolution_y = self.res[1]
 
-    return self.create_annotations(obj, MAP, TREE, LST, output_img=debug)
+    return self.create_annotations(obj, output_img=debug)
