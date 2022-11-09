@@ -1,16 +1,24 @@
 import bpy
 import pickle
 import numpy as np
+import yaml
 from sklearn.neighbors import KDTree
 
-MAP = {}
-name = "airplane"
+conf = yaml.safe_load(open('conf.yaml'))
+
+name = conf["NAME"]
+obj_name = conf["OBJ_NAME"]
+path = conf["PATH"]
 
 bpy.ops.import_scene.obj(filepath=f"models/{name}.obj")
-#obj = bpy.data.objects[-1]
-obj = bpy.data.objects['AirPlane']
+obj = bpy.data.objects[obj_name]
 
-vertices = list(obj.data.vertices)
+vertices = np.array([list(v.co) for v in obj.data.vertices])
+
+# save vertices
+np.save(path+f"/mesh/{name}.npy", vertices)
+
+exit()
 
 for face in list(obj.data.polygons):
   faces_verts = [vertices[i].co for i in list(face.vertices)]

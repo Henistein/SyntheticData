@@ -1,65 +1,130 @@
 # create a pytorch dataset
 import torch
 import glob
+import yaml
 import torch.utils.data as data
 import torchvision.transforms as transforms
+import numpy as np
 from PIL import Image
 from random import shuffle
 
-class Dataset(data.Dataset):
-  def __init__(self, paths, train_amt=0.8, train=True):
-    paths = list(glob.glob(paths+'/*'))
-    # get last part of path 
-    self.class_names = {path.split('/')[-1]:i for i,path in enumerate(paths)}
-    all_data_paths = []
-    for path in paths:
-      all_data_paths.extend(glob.glob(path+"/*"))
-    shuffle(all_data_paths)
-    self.train_data = all_data_paths[:int(train_amt*len(all_data_paths))]
-    self.test_data = all_data_paths[int(train_amt*len(all_data_paths)):]
-    self.train = train
+class Dataset:
+  def __init__(self, train_amt=0.8, conf=''):
+    self.conf = yaml.safe_load(open(conf))
+    self.DATA = {}
+    images = []
+    annotations = []
+    for path in list(glob.glob(self.conf["PATH"]+"/*")):
+      name = path.split('/')[-1]
+
+      for img in list(glob.glob(path+"/images/*")):
+        p1, p2 = img.rsplit('/', 1)
+        images.append(p1 + '/' + name+"_"+p2)
+      for ann in list(glob.glob(path+"/annotations/*")):
+        p1, p2 = ann.rsplit('/', 1)
+        annotations.append(p1 + '/' + name+"_"+p2)
+
+    images = sorted(images)
+    annotations = sorted(annotations)
+
+    temp = list(zip(images, annotations))
+    shuffle(temp)
+    images, annotations = zip(*temp)
+
+    assert len(images) == len(annotations), "Images and annotations differ in size"
+
+
+    self.train_data = {}
+    self.train_data['images'] = images[:int(train_amt*len(images))]
+    self.train_data['annotations'] = annotations[:int(train_amt*len(annotations))]
+
+    self.test_data = {}
+    self.test_data['images'] = images[int(train_amt*len(images)):]
+    self.test_data['annotations'] = annotations[int(train_amt*len(annotations)):]
+
+    assert len(self.train_data['images']) > len(self.test_data['images']), "Test images size greater than train images size"
+
+  def __call__(self):
+    return MyDataset(self.train_data), MyDataset(self.test_data)
+
+
+class MyDataset(data.Dataset):
+  def __init__(self, data):
+    self.data = data
     self.transform = transforms.Compose([
-      transforms.Resize(224),
       transforms.ToTensor(),
       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
-
+  
   def __len__(self):
-    return len(self.train_data) if self.train else len(self.test_data)
-
+    return len(self.data["images"])
+  
   def __getitem__(self, index):
-    path = self.train_data[index] if self.train else self.test_data[index]
-    target = self.class_names[path.split('/')[-2]]
-    # open and preprocess image
-    img = Image.open(path).convert('RGB')
+    img_path = self.data['images'][index]
+    mesh_path = glob.glob(img_path.rsplit('/', 2)[0]+"/mesh/*")[0]
+    img_path = img_path.rsplit('/', 1)[0] + '/' + img_path.rsplit('/', 1)[1].split('_')[1]
+    ann_path = self.data['annotations'][index]
+    ann_path = ann_path.rsplit('/', 1)[0] + '/' + ann_path.rsplit('/', 1)[1].split('_')[1]
+
+    # load image
+    img = Image.open(img_path).convert('RGB')
+    # transform
     img = self.transform(img)
-    return img, target
 
-def load_train_dataset(bs):
-  dataset = Dataset(
-    '/media/henistein/Novo volume/SyntheticData',
-  )
-  return data.DataLoader(dataset, batch_size=bs, shuffle=True)
+    # load annotations
+    ann = torch.tensor(np.load(ann_path))
 
-def load_val_dataset(bs):
-  dataset = Dataset(
-    '/media/henistein/Novo volume/SyntheticData',
-    train=False
-  )
-  return data.DataLoader(dataset, batch_size=bs, shuffle=True)
+    # load mesh
+    mesh = torch.tensor(np.load(mesh_path)).permute(1, 0)
+
+
+    return (img,mesh,ann)
+
+def my_collate(batch):
+  n_lists = set([b[1].shape[1] for b in batch])
+  lsts = {k:[] for k in n_lists}
+  for b in batch:
+    lsts[b[1].shape[1]].append(b)
+  
+  return list(lsts.values())
+
+
+def load_dataloaders(bs):
+  dataset = Dataset(conf='conf.yaml')
+  train_dataset, val_dataset = dataset()
+
+  return data.DataLoader(train_dataset, batch_size=bs, collate_fn=my_collate, shuffle=True), \
+         data.DataLoader(val_dataset, batch_size=bs, collate_fn=my_collate, shuffle=True)
 
 
 from tqdm import tqdm
 if __name__ == '__main__':
-  BS = 2
-  dataset = load_train_dataset(BS)
+  BS = 16
+  train_loader, val_loader = load_dataloaders(BS)
 
-  # save preprocessed dataset to pickle file
-  """
-  with open('dataset.pkl', 'wb') as f:
-    for img, target in tqdm(dataset):
-      pickle.dump((img, target), f)
-  """
+  #for (img,mesh,ann) in tqdm(train_loader):
+  for data in tqdm(train_loader):
+    for d in data:
+      imgs, meshes, anns = list(zip(*d))
 
-  for _ in tqdm(dataset):
-    pass
+      imgs = torch.stack(imgs)
+      meshes = torch.stack(meshes)
+      anns = torch.stack(anns)
+
+      print(imgs.shape)
+      print(meshes.shape)
+      print(anns.shape)
+      print()
+
+    break
+
+
+  """
+  for _dict in tqdm(train_loader):
+    for k in _dict.keys():
+      for (imgs, meshes, anns) in _dict[k]:
+        print(torch.tensor(imgs).shape)
+        print(torch.tensor(meshes).shape)
+        print(torch.tensor(anns).shape)
+    break
+  """
