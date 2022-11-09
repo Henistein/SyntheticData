@@ -12,3 +12,7 @@
 - Fazer a funcao de treino (funcao loss da classificacao e da regressao, basear-me no YOLO, ter atencao ao problema dos dados nao balanceados)
 - Treinar
 - Mostrar Resultados de uma forma visual
+
+Hoje:
+  - Funcao de treino
+  - Funcao de custo
