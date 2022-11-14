@@ -8,7 +8,8 @@ from scripts import cut_obj_camera_view, get_polygon_indexes, get_visible_mesh, 
 from math import prod, radians
 import random
 from random import shuffle, choice
-random.seed(422)
+import gc
+#random.seed(422)
 from PIL import Image
 
 class ListStruct:
@@ -42,6 +43,7 @@ class DataGen:
   def __init__(self):
     self.objs = {}
     self.curr_obj = None
+    self.init_func = None
     self.image_index = 0
   
   @property
@@ -95,17 +97,19 @@ def _setattr(obj, attr_s, val):
   setattr(obj, parts[-1], val)
 
 class CreateData(DataGen):
-  def __init__(self, blender, res=(1920, 1080), redux_factor=10, destination_path=None, debug=False):
+  def __init__(self, blender, res=(1920, 1080), redux_factor=10, destination_path=None, debug=False, generated_data=None):
     super().__init__()
     self.blender = blender
     self.destination_path = destination_path
     self.debug = debug
     self.res = res # (W, H)
     self.redux_factor = redux_factor
+    self.generated_data = generated_data
     # create image, annotations and maybe debug folders
     if not os.path.exists(destination_path): os.mkdir(destination_path)
     if not os.path.exists(destination_path+"/images"): os.mkdir(destination_path+"/images")
     if not os.path.exists(destination_path+"/annotations"): os.mkdir(destination_path+"/annotations")
+    if not os.path.exists(destination_path+"/mesh"): os.mkdir(destination_path+"/mesh")
     if debug: 
       if not os.path.exists(destination_path+"/debug"): os.mkdir(destination_path+"/debug")
   
@@ -176,13 +180,16 @@ class CreateData(DataGen):
 
     return (NEW_M,None,None)
 
-  def create_data(self, obj, debug=False):
+  def create_data(self, obj, debug=False, already_gen=False):
     assert self.generated_data is not None, 'No data generated!'
-    self.image_index = 0
+    #self.image_index = 0
     for data in self.generated_data:
       for ft_n, value in enumerate(data):
-        feature = self.feature_names[ft_n]
+        feature = self.feat_name[ft_n] if already_gen else self.feature_names[ft_n]
+
         if '.' in feature:
+          if feature == 'node_environment.image':
+            value = self.blender.data.images.load(value)
           # is not a dict
           obj_name, atr = feature.split('.', 1)
           _setattr(self.objs[obj_name].obj, atr, value)
@@ -229,3 +236,8 @@ class CreateData(DataGen):
     self.blender.context.scene.render.resolution_y = self.res[1]
 
     return self.create_annotations(obj, output_img=debug)
+  
+  def save_generated_data(self, path):
+    with open(path, 'wb') as f:
+      pickle.dump(self.generated_data, f)
+  

@@ -5,6 +5,7 @@ import os
 import sys
 import glob
 import yaml
+import pickle
 
 blend_dir = os.path.dirname(bpy.data.filepath)
 if blend_dir not in sys.path:
@@ -18,8 +19,7 @@ importlib.reload(data_gen)
 
 from math import radians
 
-if __name__ == '__main__':
-  conf = yaml.safe_load(open('conf.yaml'))
+def init():
   bpy.data.scenes[0].render.engine = "CYCLES"
   bpy.context.scene.cycles.device = "GPU"
 
@@ -31,8 +31,6 @@ if __name__ == '__main__':
   plane = create_camera_plane()
 
   # import sign object
-  #bpy.ops.import_scene.obj(filepath="models/stop_sign.obj")
-  #obj = bpy.data.objects['Stop']
   bpy.ops.import_scene.obj(filepath=f"models/{conf['NAME']}.obj")
   obj = bpy.data.objects[conf['OBJ_NAME']]
 
@@ -70,48 +68,71 @@ if __name__ == '__main__':
   # Reduce samples (faster rendering)
   bpy.context.scene.cycles.samples = 1024
 
-  """
-  empty = bpy.data.objects['Empty']
-  empty.constraints['Follow Path'].offset = 25
-  bpy.context.view_layer.update()
-  """
-
   # background
   node_environment = create_background()
 
-  # -------------------------------------------
+  return obj, node_environment
+
+if __name__ == '__main__':
+  conf = yaml.safe_load(open('conf.yaml'))
   path = conf["PATH"]
 
-  dg = data_gen.CreateData(bpy, res=(640, 360), redux_factor=5, destination_path=path, debug=True)
+  argv = sys.argv
+  argv = argv[argv.index("--") + 1:] 
 
-  # add empty obj (camera)
-  dg.add_obj('empty', bpy.data.objects['Empty'])
-  # offset
-  dg.add_feature("constraints,Follow Path,offset", 4, 46, 3)
-  # influence
-  dg.add_feature("constraints,Follow Path,influence", 0.25, 1.0, 0.05)
+  # -------------------------------------------
+  # init blender world configs
+  obj, node_environment = init()
 
-  # add obj
-  dg.add_obj('obj', obj)
-  # location
-  dg.add_feature("location.x", -10, 0, 2)
-  dg.add_feature("location.y", -10, 10, 4)
-  dg.add_feature("location.z", -5, 5, 2)
+  if argv[0] == "load_generated_data":
+    # load generated data file
+    with open(argv[1], 'rb') as f:
+      generated_data = pickle.load(f)
+    
+    offsets = (int(argv[2]), int(argv[3]))
+    generated_data = generated_data[offsets[0]:offsets[1]]
 
-  # rotation
-  dg.add_feature("rotation_euler.x", 90, 100, 2, radians)
-  dg.add_feature("rotation_euler.y", -180, 180, 36, radians)
-  dg.add_feature("rotation_euler.z", 80, 100, 5, radians)
+    dg = data_gen.CreateData(bpy, res=(256, 256), redux_factor=1, destination_path=path, debug=True, generated_data=generated_data)
+    dg.add_obj('empty', bpy.data.objects['Empty'])
+    dg.add_obj('obj', obj)
+    dg.add_obj('node_environment', node_environment)
+    dg.feat_name = ['empty,constraints,Follow Path,offset', 'empty,constraints,Follow Path,influence', 'obj.location.x', 'obj.location.y', 'obj.location.z', 'obj.rotation_euler.x', 'obj.rotation_euler.y', 'obj.rotation_euler.z', 'node_environment.image']
+    dg.image_index = offsets[0]
+    dg.create_data(obj, debug=True, already_gen=True)
 
-  # add background object
-  dg.add_obj('node_environment', node_environment)
-  dg.add_elements('image', list(map(bpy.data.images.load, glob.glob('backgrounds/*'))))
+  else:
+    dg = data_gen.CreateData(bpy, res=(256, 256), redux_factor=1, destination_path=path, debug=True, generated_data=None)
 
-  # Generate and create data
-  dg.generate(35000)
 
-  #dg.create_data(obj, MAP, TREE, LST, debug=True)
-  dg.create_random_sample(obj, debug=True)
+    # add empty obj (camera)
+    dg.add_obj('empty', bpy.data.objects['Empty'])
+    # offset
+    dg.add_feature("constraints,Follow Path,offset", 4, 46, 3)
+    # influence
+    dg.add_feature("constraints,Follow Path,influence", 0.25, 1.0, 0.05)
 
-  #annotations = dg.create_random_sample(obj, MAP=MAP)
-  #print(annotations.shape)
+    # add obj
+    dg.add_obj('obj', obj)
+    # location
+    dg.add_feature("location.x", -10, 0, 2)
+    dg.add_feature("location.y", -10, 10, 4)
+    dg.add_feature("location.z", -5, 5, 2)
+
+    # rotation
+    dg.add_feature("rotation_euler.x", 90, 100, 2, radians)
+    dg.add_feature("rotation_euler.y", -180, 180, 36, radians)
+    dg.add_feature("rotation_euler.z", 80, 100, 5, radians)
+
+    # add background object
+    dg.add_obj('node_environment', node_environment)
+    dg.add_elements('image', list(glob.glob('backgrounds/*')))
+
+    # Generate and create data
+    dg.generate(33000)
+
+    dg.save_generated_data('pkls/airplane_data_gen.pkl')
+    #dg.create_data(obj, debug=True)
+    #dg.create_random_sample(obj, debug=True)
+
+    #annotations = dg.create_random_sample(obj, MAP=MAP)
+    #print(annotations.shape)
