@@ -19,7 +19,7 @@ importlib.reload(data_gen)
 
 from math import radians
 
-def init():
+def init(obj_name, ):
   bpy.data.scenes[0].render.engine = "CYCLES"
   bpy.context.scene.cycles.device = "GPU"
 
@@ -31,8 +31,8 @@ def init():
   plane = create_camera_plane()
 
   # import sign object
-  bpy.ops.import_scene.obj(filepath=f"models/{conf['NAME']}.obj")
-  obj = bpy.data.objects[conf['OBJ_NAME']]
+  bpy.ops.import_scene.obj(filepath=f"models/{name}.obj")
+  obj = bpy.data.objects[obj_name]
 
   # reset objects position
   obj.location.x = 0
@@ -47,7 +47,6 @@ def init():
   bpy.ops.curve.primitive_bezier_circle_add(radius=10, location=(0, 0, 0))
   # add an empty cube
   bpy.ops.object.empty_add(type='CUBE')
-
 
   # make camera track sign
   camera_constraint = plane.constraints.new(type='TRACK_TO')
@@ -74,22 +73,27 @@ def init():
   return obj, node_environment
 
 if __name__ == '__main__':
-  conf = yaml.safe_load(open('conf.yaml'))
-  path = conf["PATH"]
+  #conf = yaml.safe_load(open('conf.yaml'))
+  #path = conf["PATH"]
 
-  argv = sys.argv
-  argv = argv[argv.index("--") + 1:] 
+  # args
+  argv = " ".join(sys.argv).replace(" -- ", "++").split("++")[1:]
+  conf = {s.split(" ")[0]:s.split(" ")[1:] for s in argv}
 
   # -------------------------------------------
-  # init blender world configs
-  obj, node_environment = init()
+  # extract obj path, name and obj name
+  path, name, obj_name = conf["obj"]
 
-  if argv[0] == "load_generated_data":
+  # init blender world configs
+  obj, node_environment = init(obj_name)
+
+  if "load_generated_data" in conf.keys():
+    gen_data_path, begin_index, final_index = conf['load_generated_data']
     # load generated data file
-    with open(argv[1], 'rb') as f:
+    with open(gen_data_path, 'rb') as f:
       generated_data = pickle.load(f)
     
-    offsets = (int(argv[2]), int(argv[3]))
+    offsets = (begin_index, final_index)
     generated_data = generated_data[offsets[0]:offsets[1]]
 
     dg = data_gen.CreateData(bpy, res=(256, 256), redux_factor=1, destination_path=path, debug=True, generated_data=generated_data)
