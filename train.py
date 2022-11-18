@@ -12,7 +12,7 @@ from loss import ComputeLoss
 
 class Train:
   EPOCHS = 50
-  LEARNING_RATE = 1e-3
+  LEARNING_RATE = 1e-5
 
   def __init__(self, train_dataset, val_dataset):
     self.model = Net()
@@ -20,7 +20,9 @@ class Train:
     self.model.to(self.device)
     self.train_dataset = train_dataset
     self.val_dataset = val_dataset 
-    self.optimizer = optim.Adam(self.model.parameters(), lr=Train.LEARNING_RATE)
+    self.optimizer = optim.Adam(self.model.parameters(), lr=Train.LEARNING_RATE, weight_decay=1e-8)
+    self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', patience=2)
+    self.grad_scaler = torch.cuda.amp.GradScaler(enabled=False)
     self.criterion = ComputeLoss()
   
   def _mean(self, x):
@@ -39,19 +41,20 @@ class Train:
 
         self.optimizer.zero_grad()
 
-        # Forward pass
-        outputs = self.model(meshes, imgs)
+        with torch.cuda.amp.autocast(enabled=False):
+          # Forward pass
+          outputs = self.model(meshes, imgs)
+          # Compute loss
+          loss = self.criterion(preds=outputs, target=anns)
 
-        # Compute loss
-        loss = self.criterion(preds=outputs, target=anns)
-
+        # save train loss
         train_loss.append(loss.item())
 
-        # Backpropagation
-        loss.backward()
-
-        # Update weights
-        self.optimizer.step()
+        # Backpropagation and Update weights
+        self.optimizer.zero_grad(set_to_none=True)
+        self.grad_scaler.scale(loss).backward()
+        self.grad_scaler.step(self.optimizer)
+        self.grad_scaler.update()
 
         t.set_description(f'loss: {loss.item():.4f}')
         """
@@ -106,6 +109,9 @@ class Train:
       valid_loss.append(epoch_loss)
       #valid_acc.append(epoch_acc)
 
+      # scheduler step
+      self.scheduler.step(epoch_loss)
+
       if best_loss is None or epoch_loss < best_loss:
         # save the best model
         torch.save(self.model.state_dict(), path+"/best.pt")
@@ -118,7 +124,7 @@ class Train:
 
 
 if __name__ == '__main__':
-  BS = 3
+  BS = 6
   train_loader, val_loader = load_dataloaders(BS)
   train = Train(train_dataset=train_loader, val_dataset=val_loader)
   train.train(path='/home/socialab/Henrique/SyntheticData/results')
