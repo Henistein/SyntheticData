@@ -1,18 +1,13 @@
-- Gerar 33K de imagens e anotacoes para cada objeto 3D
-  - Trabalhar as meshes
-  - Verificar a variabilidade de fatores (adicionar rotacao)
-  - Explorar a funcao bvh tree overlap
+- Alterar o modelo de modo a suportar data-paralelismo
+- Arranjar forma de passar os dados para o servidor de forma remota
 
-- Criar a arquitetura do PROF
-  - Converter a malha 3d para um conjunto de 10 imagens
-  - Uma branch extrai as features da malha mas retorna uma imagem no final
-  - Outra branch extrai as features da imagem
-  - Concatenamos essas imagens e aplicamos mais uma serie de layers para fazer a extracao de features, esta layer pode ser semelhante/igual a ResNet
-- Criar a minha arquitetura e fazer as ligacoes para o upsampling
-- Fazer a funcao de treino (funcao loss da classificacao e da regressao, basear-me no YOLO, ter atencao ao problema dos dados nao balanceados)
-- Treinar
-- Mostrar Resultados de uma forma visual
+- Explorar e estudar melhor os modelos de 3d meshes.
+- Perceber como outros modelos que usam malhas 3D normalizam estas diferentes malhas
 
-Hoje:
-  - Funcao de treino
-  - Funcao de custo
+- Preparar o servidor para executar o script de treino
+
+As primeiras 10 epochs devem ser melhores que: 
+[1.3239, 1.4316, 1.4333, 1.3833, 1.3692, 1.3859, 1.3755, 1.3187, 1.3202, 1.3136]
+
+Usar dataset do mnist 3d:
+https://anintroductiontodeeplearningonmeshes.github.io/#datasets

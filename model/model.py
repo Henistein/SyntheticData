@@ -11,7 +11,7 @@ class Net(nn.Module):
     self.down_net = DownNet(3, n_classes=1)
     self.up_net = UpNet()
     self.conv1 = nn.Conv1d(1, 16*16, 1)
-    self.avg = nn.AvgPool2d(2,2)
+    self.avg = nn.AvgPool1d(2,2)
     self.out_conv = nn.Sequential(
         nn.Conv2d(64, 4, 1),
         nn.ReLU(),
@@ -28,16 +28,17 @@ class Net(nn.Module):
 
     features_3d = features_3d.permute(0, 2, 1)
     features_3d = features_3d.view(features_3d.shape[0], -1, 16, 16)
-    # features_3d.shape = (BS, 1024, 22, 40)
+    # features_3d.shape = (BS, 1024, 16, 16)
 
     # concatenate two feature tensors
     cat = torch.cat((features_3d, features_2d), dim=1) # (BS, 2048, 16, 16)
     # repeat tensor
-    rep = cat.repeat(1, 2, 1, 1)
-    bs, _, s1, s2 = rep.shape
-    out = self.avg(rep)
-    out = out.view(bs, -1, s1, s2)
-
+    #rep = cat.repeat(1, 2, 1, 1) # (BS, 4096, 16, 16)
+    #bs, _, s1, s2 = rep.shape
+    #out = self.avg(rep) # (BS, 4096, 8, 8)
+    #out = out.view(bs, -1, s1, s2) # (BS, 1024, 16, 16)
+    # (BS, 2048, 16, 16) -> (BS, 1024, 16, 16)
+    out = self.avg(cat.view(-1,16*16,2048)).view(-1,1024,16,16)
 
     # UpNet
     out = self.up_net(x1, x2, x3, x4, features_2d)
