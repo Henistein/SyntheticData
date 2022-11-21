@@ -4,11 +4,9 @@ import numpy as np
 import yaml
 from sklearn.neighbors import KDTree
 
-conf = yaml.safe_load(open('conf.yaml'))
-
-name = conf["NAME"]
-obj_name = conf["OBJ_NAME"]
-path = conf["PATH"]
+name = 'sofa'
+obj_name = 'Sofa'
+path = '/home/socialab/Henrique/SyntheticData/data_gen/models'
 
 bpy.ops.import_scene.obj(filepath=f"models/{name}.obj")
 obj = bpy.data.objects[obj_name]
@@ -16,19 +14,33 @@ obj = bpy.data.objects[obj_name]
 vertices = np.array([list(v.co) for v in obj.data.vertices])
 
 # save vertices
-np.save(path+f"/mesh/{name}.npy", vertices)
+#np.save(path+f"/mesh/{name}.npy", vertices)
 
+MAP = {tuple(face.center):face for face in list(obj.data.polygons)}
+"""
+for face in list(obj.data.polygons):
+  #faces_verts = [vertices[i] for i in list(face.vertices)]
+  #flat = tuple(item for sublist in faces_verts for item in sublist)
+  MAP[tuple(face.center)] = face
+"""
+
+centers = np.array(list(MAP.keys()))
+
+# pass centers to kdtree
+#X = list(map(lambda x: list(x.co), vertices))
+tree =  KDTree(centers, leaf_size=2)
+
+# query center
+x = [(-0.55251166, 0.412381, -0.08782556)]
+_, ind = tree.query(x, k=3)
+ind = ind[0, 0]
+
+# get center
+center = tuple(centers[ind].flatten())
+
+print(MAP[center].index)
 exit()
 
-for face in list(obj.data.polygons):
-  faces_verts = [vertices[i].co for i in list(face.vertices)]
-  flat = tuple(round(item, 3) for sublist in faces_verts for item in sublist)
-  MAP[flat] = tuple(face.center)
-
-
-X = list(map(lambda x: list(x.co), vertices))
-keys = np.array(X)
-tree =  KDTree(X, leaf_size=2)
 
 # save dict
 with open(f'pkls/{name}_map.pkl', 'wb') as f:

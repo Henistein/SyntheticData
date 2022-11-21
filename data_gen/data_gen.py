@@ -106,12 +106,13 @@ class CreateData(DataGen):
     self.redux_factor = redux_factor
     self.generated_data = generated_data
     # create image, annotations and maybe debug folders
-    if not os.path.exists(destination_path): os.mkdir(destination_path)
-    if not os.path.exists(destination_path+"/images"): os.mkdir(destination_path+"/images")
-    if not os.path.exists(destination_path+"/annotations"): os.mkdir(destination_path+"/annotations")
-    if not os.path.exists(destination_path+"/mesh"): os.mkdir(destination_path+"/mesh")
-    if debug: 
-      if not os.path.exists(destination_path+"/debug"): os.mkdir(destination_path+"/debug")
+    if destination_path is not None:
+      if not os.path.exists(destination_path): os.mkdir(destination_path)
+      if not os.path.exists(destination_path+"/images"): os.mkdir(destination_path+"/images")
+      if not os.path.exists(destination_path+"/annotations"): os.mkdir(destination_path+"/annotations")
+      if not os.path.exists(destination_path+"/mesh"): os.mkdir(destination_path+"/mesh")
+      if debug: 
+        if not os.path.exists(destination_path+"/debug"): os.mkdir(destination_path+"/debug")
   
   def generate(self, ammount):
     self.generated_data = super().generate(ammount)

@@ -19,7 +19,7 @@ importlib.reload(data_gen)
 
 from math import radians
 
-def init(obj_name, ):
+def init(obj_name):
   bpy.data.scenes[0].render.engine = "CYCLES"
   bpy.context.scene.cycles.device = "GPU"
 
@@ -82,7 +82,8 @@ if __name__ == '__main__':
 
   # -------------------------------------------
   # extract obj path, name and obj name
-  path, name, obj_name = conf["obj"]
+  save_path, name, obj_name = conf["obj"]
+  save_path += f"/{obj_name}"
 
   # init blender world configs
   obj, node_environment = init(obj_name)
@@ -93,10 +94,10 @@ if __name__ == '__main__':
     with open(gen_data_path, 'rb') as f:
       generated_data = pickle.load(f)
     
-    offsets = (begin_index, final_index)
+    offsets = (int(begin_index), int(final_index))
     generated_data = generated_data[offsets[0]:offsets[1]]
 
-    dg = data_gen.CreateData(bpy, res=(256, 256), redux_factor=1, destination_path=path, debug=True, generated_data=generated_data)
+    dg = data_gen.CreateData(bpy, res=(256, 256), redux_factor=1, destination_path=save_path, debug=True, generated_data=generated_data)
     dg.add_obj('empty', bpy.data.objects['Empty'])
     dg.add_obj('obj', obj)
     dg.add_obj('node_environment', node_environment)
@@ -105,7 +106,7 @@ if __name__ == '__main__':
     dg.create_data(obj, debug=True, already_gen=True)
 
   else:
-    dg = data_gen.CreateData(bpy, res=(256, 256), redux_factor=1, destination_path=path, debug=True, generated_data=None)
+    dg = data_gen.CreateData(bpy, res=(256, 256), redux_factor=1, destination_path=None, debug=True, generated_data=None)
 
 
     # add empty obj (camera)
@@ -118,9 +119,9 @@ if __name__ == '__main__':
     # add obj
     dg.add_obj('obj', obj)
     # location
-    dg.add_feature("location.x", -10, 0, 2)
-    dg.add_feature("location.y", -10, 10, 4)
-    dg.add_feature("location.z", -5, 5, 2)
+    dg.add_feature("location.x", -5, 0, 1)
+    dg.add_feature("location.y", 0, 10, 2)
+    dg.add_feature("location.z", 0, 5, 1)
 
     # rotation
     dg.add_feature("rotation_euler.x", 90, 100, 2, radians)
@@ -134,7 +135,7 @@ if __name__ == '__main__':
     # Generate and create data
     dg.generate(33000)
 
-    dg.save_generated_data('pkls/airplane_data_gen.pkl')
+    dg.save_generated_data(f'pkls/gen_data_close_2.pkl')
     #dg.create_data(obj, debug=True)
     #dg.create_random_sample(obj, debug=True)
 
