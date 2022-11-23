@@ -1,10 +1,10 @@
-# train efficientnet-b4 on this dataset
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import matplotlib.pyplot as plt
+import argparse
+import numpy as np
 from tqdm import tqdm 
 from dataset import load_dataloaders
 from model.model import Net
@@ -14,12 +14,16 @@ class Train:
   EPOCHS = 50
   LEARNING_RATE = 1e-5
 
-  def __init__(self, train_dataset, val_dataset):
+  def __init__(self, train_dataset, val_dataset, weights):
+    # load model
     self.model = Net()
-    self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    self.model.to(self.device)
+    self.model.cuda()
+    self.model= nn.DataParallel(self.model, device_ids=[0,2,3])
+    self.model.load_state_dict(torch.load(weights), strict=False) if weights else self.model
+    # dataset 
     self.train_dataset = train_dataset
     self.val_dataset = val_dataset 
+    # params
     self.optimizer = optim.Adam(self.model.parameters(), lr=Train.LEARNING_RATE, weight_decay=1e-8)
     self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', patience=2)
     self.grad_scaler = torch.cuda.amp.GradScaler(enabled=False)
@@ -31,37 +35,29 @@ class Train:
   def _train(self):
     self.model.train()
     train_loss, train_acc = [], []
-    for batch in (t:=tqdm(self.train_dataset)):
-      for b in batch:
-        imgs, meshes, anns = list(zip(*b))
+    for (imgs, meshes, anns) in (t:=tqdm(self.train_dataset)):
+      imgs = imgs.cuda().float()
+      meshes = meshes.cuda().float()
+      anns = anns.cuda().float()
 
-        imgs = torch.stack(imgs).to(self.device).float()
-        meshes = torch.stack(meshes).to(self.device).float()
-        anns = torch.stack(anns).to(self.device).float()
+      self.optimizer.zero_grad()
 
-        self.optimizer.zero_grad()
+      with torch.cuda.amp.autocast(enabled=False):
+        # Forward pass
+        outputs = self.model(meshes, imgs)
+        # Compute loss
+        loss = self.criterion(preds=outputs, target=anns)
 
-        with torch.cuda.amp.autocast(enabled=False):
-          # Forward pass
-          outputs = self.model(meshes, imgs)
-          # Compute loss
-          loss = self.criterion(preds=outputs, target=anns)
+      # save train loss
+      train_loss.append(loss.item())
 
-        # save train loss
-        train_loss.append(loss.item())
+      # Backpropagation and Update weights
+      self.optimizer.zero_grad(set_to_none=True)
+      self.grad_scaler.scale(loss).backward()
+      self.grad_scaler.step(self.optimizer)
+      self.grad_scaler.update()
 
-        # Backpropagation and Update weights
-        self.optimizer.zero_grad(set_to_none=True)
-        self.grad_scaler.scale(loss).backward()
-        self.grad_scaler.step(self.optimizer)
-        self.grad_scaler.update()
-
-        t.set_description(f'loss: {loss.item():.4f}')
-        """
-        # Calculate the accuracy and save it
-        predicted = torch.argmax(outputs, dim=1)
-        train_acc.append((predicted == y).float().mean().item())
-        """
+      t.set_description(f'loss: {loss.item():.4f}')
 
     return self._mean(train_loss)
   
@@ -69,13 +65,10 @@ class Train:
     self.model.eval()
     val_loss, val_acc = [], []
     with torch.no_grad():
-      for batch in (t:=tqdm(self.val_dataset)):
-        for b in batch:
-          imgs, meshes, anns = list(zip(*b))
-
-          imgs = torch.stack(imgs).to(self.device).float()
-          meshes = torch.stack(meshes).to(self.device).float()
-          anns = torch.stack(anns).to(self.device).float()
+      for (imgs, meshes, anns) in (t:=tqdm(self.val_dataset)):
+          imgs = imgs.cuda().float()
+          meshes = meshes.cuda().float()
+          anns = anns.cuda().float()
 
           self.optimizer.zero_grad()
 
@@ -117,6 +110,9 @@ class Train:
         torch.save(self.model.state_dict(), path+"/best.pt")
       # save the last model 
       torch.save(self.model.state_dict(), path+"/last.pt")
+      # save stats
+      np.save(path+"/train_loss.npy", np.array(train_loss))
+      np.save(path+"/valid_loss.npy", np.array(valid_loss))
 
       print(f'Epoch: {epoch}, Loss: {epoch_loss:.4f}')
     
@@ -124,7 +120,13 @@ class Train:
 
 
 if __name__ == '__main__':
-  BS = 6
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--batch_size', type=int, default=32, help='batch size')
+  parser.add_argument('--save_path', type=str, default='', help='path to save the results')
+  parser.add_argument('--load_model', type=str, default='', help='load model weights')
+  parser = parser.parse_args()
+
+  BS = parser.batch_size
   train_loader, val_loader = load_dataloaders(BS)
-  train = Train(train_dataset=train_loader, val_dataset=val_loader)
-  train.train(path='/home/socialab/Henrique/SyntheticData/results')
+  train = Train(train_dataset=train_loader, val_dataset=val_loader, weights=parser.load_model)
+  train.train(path=parser.save_path)

@@ -9,12 +9,11 @@ from PIL import Image
 from random import shuffle
 
 class Dataset:
-  def __init__(self, train_amt=0.8, conf=''):
-    self.conf = yaml.safe_load(open(conf))
+  def __init__(self, train_amt=0.8, data_path=None):
     self.DATA = {}
     images = []
     annotations = []
-    for path in list(glob.glob(self.conf["PATH"]+"/*")):
+    for path in list(glob.glob(data_path+"/*")):
       name = path.split('/')[-1]
 
       for img in list(glob.glob(path+"/images/*")):
@@ -80,21 +79,12 @@ class MyDataset(data.Dataset):
 
     return (img,mesh,ann)
 
-def my_collate(batch):
-  n_lists = set([b[1].shape[1] for b in batch])
-  lsts = {k:[] for k in n_lists}
-  for b in batch:
-    lsts[b[1].shape[1]].append(b)
-  
-  return list(lsts.values())
-
-
 def load_dataloaders(bs):
-  dataset = Dataset(conf='conf.yaml')
+  dataset = Dataset(data_path='/home/socialab/Desktop/Henrique/DATA_MNIST')
   train_dataset, val_dataset = dataset()
 
-  return data.DataLoader(train_dataset, batch_size=bs, collate_fn=my_collate, shuffle=True), \
-         data.DataLoader(val_dataset, batch_size=bs, collate_fn=my_collate, shuffle=True)
+  return data.DataLoader(train_dataset, batch_size=bs, collate_fn=None, shuffle=True), \
+         data.DataLoader(val_dataset, batch_size=bs, collate_fn=None, shuffle=True)
 
 
 from tqdm import tqdm
@@ -117,14 +107,3 @@ if __name__ == '__main__':
       print()
 
     break
-
-
-  """
-  for _dict in tqdm(train_loader):
-    for k in _dict.keys():
-      for (imgs, meshes, anns) in _dict[k]:
-        print(torch.tensor(imgs).shape)
-        print(torch.tensor(meshes).shape)
-        print(torch.tensor(anns).shape)
-    break
-  """
