@@ -1,5 +1,6 @@
 import bpy
 import cv2
+import sys
 import socket
 import threading
 import numpy as np
@@ -9,7 +10,7 @@ from math import radians
 from sklearn.neighbors import KDTree
 
 # ------------------ T1 -----------------------
-def loop(obj, MAP, tree, ann):
+def loop(grid, MAP, tree, ann):
   ann = ann[..., 1:]
   # Extract keys from MAP
   centers = np.array(list(MAP.keys()))
@@ -44,34 +45,40 @@ def loop(obj, MAP, tree, ann):
     face.select = True
     
     # select image pixels
-    indexes = np.where(np.all(ann == center, axis=2))
-    print(center)
+    indexes = np.where(np.all(ann == coord[0], axis=2))
     indexes = list(zip(indexes[0], indexes[1]))
     indexes = list(map(convert_2d_to_1d, indexes))
 
     for i in indexes:
-      print(i)
-      list(obj.data.polygons)[i].select = True
-      print(list(obj.data.polygons)[i].select)
-        
+      list(grid.data.polygons)[i].select = True
       
   conn.close()
-
-# ------------------ T1 -----------------------
-
 
 def convert_2d_to_1d(pt, W=256):
   # convert a 2d point to a flatten index
   return pt[0]*W + pt[1]
 
+
+# args
+"""
+npy path
+name
+obj_name
+img_path
+"""
+argv = " ".join(sys.argv).replace(" -- ", "++").split("++")[1:]
+conf = {s.split(" ")[0]:s.split(" ")[1:] for s in argv}
+
+npy_path,name,obj_name,img_path = conf['args']
+
 bpy.ops.wm.open_mainfile(filepath="match_tool_model.blend")
 
-data = np.load('a000420.npy')
+# load data
+data = np.load(npy_path)
 grid = bpy.data.objects['Grid']
+bpy.data.materials['Material'].node_tree.nodes['Image Texture'].image = bpy.data.images.load(img_path)
 
 # import object
-name = 'sofa'
-obj_name = 'Sofa'
 bpy.ops.import_scene.obj(filepath=f"../data_gen/models/{name}.obj")
 obj = bpy.data.objects[obj_name]
 
@@ -88,41 +95,7 @@ MAP = {tuple(face.center):face for face in list(obj.data.polygons)}
 centers = np.array(list(MAP.keys()))
 tree =  KDTree(centers, leaf_size=2)
 
-# create a set with all different coordinates from annotations
-#all_coords = list(set(map(tuple, data[..., 1:].reshape(-1,3))))
-
-
-# query center
-#x = [(-0.55251166, 0.412381, -0.08782556)]
-#x = [all_coords[0]]
-#dist, ind = tree.query(x, k=3)
-#ind = ind[0, 0]
-
-# get center
-#center = tuple(centers[ind].flatten())
-#print(MAP[center].index)
-
-
 # ----------------
-#path = 'big_000420.png'
-# show image
-#bpy.ops.mesh.select_all(action='DESELECT')
 bpy.context.view_layer.objects.active = obj
-t1 = threading.Thread(target=loop, args=(obj,MAP,tree,data))
+t1 = threading.Thread(target=loop, args=(grid,MAP,tree,data))
 t1.start()
-
-
-
-# query
-#res = np.where(np.all(data == data[147, 157], axis=2))
-#res = list(zip(res[0], res[1]))
-#res = list(map(convert_2d_to_1d, res))
-
-#faces = list(grid.data.polygons)
-
-
-"""
-for i in res:
-  faces[i].select = True
-"""
-

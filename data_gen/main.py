@@ -106,7 +106,7 @@ if __name__ == '__main__':
     dg.create_data(obj, debug=True, already_gen=True)
 
   else:
-    dg = data_gen.CreateData(bpy, res=(256, 256), redux_factor=1, destination_path=None, debug=True, generated_data=None)
+    dg = data_gen.CreateData(bpy, res=(256, 256), redux_factor=1, destination_path=save_path, debug=False, generated_data=None)
 
 
     # add empty obj (camera)
@@ -133,10 +133,10 @@ if __name__ == '__main__':
     dg.add_elements('image', list(glob.glob('backgrounds/*')))
 
     # Generate and create data
-    dg.generate(33000)
+    dg.generate(1000)
 
-    dg.save_generated_data(f'pkls/gen_data_close_2.pkl')
-    #dg.create_data(obj, debug=True)
+    #dg.save_generated_data(f'pkls/gen_data_close_2.pkl')
+    dg.create_data(obj, debug=False)
     #dg.create_random_sample(obj, debug=True)
 
     #annotations = dg.create_random_sample(obj, MAP=MAP)
