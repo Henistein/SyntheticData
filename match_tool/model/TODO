@@ -1,0 +1,13 @@
+- Alterar o modelo de modo a suportar data-paralelismo
+- Arranjar forma de passar os dados para o servidor de forma remota
+
+- Explorar e estudar melhor os modelos de 3d meshes.
+- Perceber como outros modelos que usam malhas 3D normalizam estas diferentes malhas
+
+- Preparar o servidor para executar o script de treino
+
+As primeiras 10 epochs devem ser melhores que: 
+[1.3239, 1.4316, 1.4333, 1.3833, 1.3692, 1.3859, 1.3755, 1.3187, 1.3202, 1.3136]
+
+Usar dataset do mnist 3d:
+https://anintroductiontodeeplearningonmeshes.github.io/#datasets

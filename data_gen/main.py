@@ -112,9 +112,9 @@ if __name__ == '__main__':
     # add empty obj (camera)
     dg.add_obj('empty', bpy.data.objects['Empty'])
     # offset
-    dg.add_feature("constraints,Follow Path,offset", 4, 46, 3)
+    dg.add_feature("constraints,Follow Path,offset", 0, 120, 5)
     # influence
-    dg.add_feature("constraints,Follow Path,influence", 0.25, 1.0, 0.05)
+    dg.add_feature("constraints,Follow Path,influence", 0.65, 1.0, 0.05)
 
     # add obj
     dg.add_obj('obj', obj)
@@ -124,19 +124,19 @@ if __name__ == '__main__':
     dg.add_feature("location.z", 0, 5, 1)
 
     # rotation
-    dg.add_feature("rotation_euler.x", 90, 100, 2, radians)
-    dg.add_feature("rotation_euler.y", -180, 180, 36, radians)
-    dg.add_feature("rotation_euler.z", 80, 100, 5, radians)
+    dg.add_feature("rotation_euler.x", 0, 100, 5, radians)
+    dg.add_feature("rotation_euler.y", -180, 180, 10, radians)
+    dg.add_feature("rotation_euler.z", 0, 100, 5, radians)
 
     # add background object
     dg.add_obj('node_environment', node_environment)
     dg.add_elements('image', list(glob.glob('backgrounds/*')))
 
     # Generate and create data
-    dg.generate(1000)
+    dg.generate(33000)
 
-    #dg.save_generated_data(f'pkls/gen_data_close_2.pkl')
-    dg.create_data(obj, debug=False)
+    dg.save_generated_data(f'pkls/gen_data_7.pkl')
+    #dg.create_data(obj, debug=False)
     #dg.create_random_sample(obj, debug=True)
 
     #annotations = dg.create_random_sample(obj, MAP=MAP)

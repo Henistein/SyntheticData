@@ -5,6 +5,7 @@ import socket
 import threading
 import numpy as np
 
+from ..inference import Inference
 from PIL import Image
 from math import radians
 from sklearn.neighbors import KDTree
@@ -58,7 +59,6 @@ def convert_2d_to_1d(pt, W=256):
   # convert a 2d point to a flatten index
   return pt[0]*W + pt[1]
 
-
 # args
 """
 npy path
@@ -69,17 +69,16 @@ img_path
 argv = " ".join(sys.argv).replace(" -- ", "++").split("++")[1:]
 conf = {s.split(" ")[0]:s.split(" ")[1:] for s in argv}
 
-npy_path,name,obj_name,img_path = conf['args']
+obj_name,img_path,mesh_path = conf['args']
 
 bpy.ops.wm.open_mainfile(filepath="match_tool_model.blend")
 
 # load data
-data = np.load(npy_path)
 grid = bpy.data.objects['Grid']
 bpy.data.materials['Material'].node_tree.nodes['Image Texture'].image = bpy.data.images.load(img_path)
 
 # import object
-bpy.ops.import_scene.obj(filepath=f"../data_gen/models/{name}.obj")
+bpy.ops.import_scene.obj(filepath=f"../data_gen/models/{obj_name}.obj")
 obj = bpy.data.objects[obj_name]
 
 # place object in the side of the grid
@@ -95,7 +94,15 @@ MAP = {tuple(face.center):face for face in list(obj.data.polygons)}
 centers = np.array(list(MAP.keys()))
 tree =  KDTree(centers, leaf_size=2)
 
-# ----------------
-bpy.context.view_layer.objects.active = obj
-t1 = threading.Thread(target=loop, args=(grid,MAP,tree,data))
-t1.start()
+# Inference
+inf = Inference(obj_name)
+
+inf.load_image_mesh(img_path=img_path, mesh_path=mesh_path)
+inf.inference()
+
+if 1 == 0:
+
+  # ----------------
+  bpy.context.view_layer.objects.active = obj
+  t1 = threading.Thread(target=loop, args=(grid,MAP,tree))
+  t1.start()

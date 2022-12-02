@@ -224,6 +224,8 @@ class CreateData(DataGen):
     for ft_n, value in enumerate(data):
       feature = self.feature_names[ft_n]
       if '.' in feature:
+        if feature == 'node_environment.image':
+          value = self.blender.data.images.load(value)
         # is not a dict
         obj_name, atr = feature.split('.', 1)
         _setattr(self.objs[obj_name].obj, atr, value)
