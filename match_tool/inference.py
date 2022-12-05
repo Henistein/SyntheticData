@@ -54,8 +54,8 @@ class Inference:
   def inference(self):
     # inference
     output = self.model(self.mesh, self.img)
-    image = self.output_to_image(output)
-    Image.fromarray(np.uint8(image)).show()
+    return self.output_to_image(output)
+    #Image.fromarray(np.uint8(image)).show()
 
   def query_row_to_center(self, row):
     row = [row.tolist()[1:]]
@@ -91,7 +91,7 @@ class Inference:
         if image_matrix[i, j, 0] != 0:
           color_matrix[i, j] = map_colors[tuple(image_matrix[i, j])]
 
-    return color_matrix
+    return image_matrix, color_matrix
 
 if __name__ == '__main__':
   # args

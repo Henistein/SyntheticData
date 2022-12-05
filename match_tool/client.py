@@ -32,7 +32,8 @@ def click_image(img_path, ann_path):
   client_socket.close()
 
 
-click_image("big_000420.png", "a000420.npy")
+#click_image("/tmp/tmp_color_matrix.png", "000001_mesh.npy")
+click_image("/tmp/tmp_color_matrix.png", "/tmp/tmp_image_matrix.npy")
 
 
 """

@@ -5,7 +5,14 @@ import socket
 import threading
 import numpy as np
 
-from ..inference import Inference
+import sys
+import os
+
+blend_dir = os.path.dirname(bpy.data.filepath)
+if blend_dir not in sys.path:
+  sys.path.append(blend_dir)
+
+from inference import Inference
 from PIL import Image
 from math import radians
 from sklearn.neighbors import KDTree
@@ -98,11 +105,14 @@ tree =  KDTree(centers, leaf_size=2)
 inf = Inference(obj_name)
 
 inf.load_image_mesh(img_path=img_path, mesh_path=mesh_path)
-inf.inference()
+image_matrix, color_matrix = inf.inference()
+# save both matrixes in /tmp
+#np.save("/tmp/tmp_image_matrix.npy", image_matrix)
+Image.fromarray(np.uint8(color_matrix)).save("/tmp/tmp_color_matrix.png")
 
-if 1 == 0:
+if 1 == 1:
 
   # ----------------
   bpy.context.view_layer.objects.active = obj
-  t1 = threading.Thread(target=loop, args=(grid,MAP,tree))
+  t1 = threading.Thread(target=loop, args=(grid,MAP,tree,image_matrix))
   t1.start()
