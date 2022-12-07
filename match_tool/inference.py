@@ -54,7 +54,7 @@ class Inference:
   def inference(self):
     # inference
     output = self.model(self.mesh, self.img)
-    return self.output_to_image(output)
+    return *self.output_to_image(output), output.squeeze(0)
     #Image.fromarray(np.uint8(image)).show()
 
   def query_row_to_center(self, row):

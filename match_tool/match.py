@@ -42,22 +42,32 @@ def loop(grid, MAP, tree, ann):
     x, y, z = data.split(' ')
 
     coord = [(float(x), float(y), float(z))]
+
     dist, ind = tree.query(coord, k=3)
     ind = ind[0, 0]
 
     center = tuple(centers[ind].flatten())
 
+    MAP = {tuple(face.center):face for face in list(obj.data.polygons)}
     # select face
     face = MAP[center]
-    print("FROM SERVER: ", face.index)
+    print("Face index =", face.index)
+    print("Predicted center =", coord)
+    print("GT center =", center)
+    print("Dist =", dist[0, 0])
+    print()
     face.select = True
     
     # select image pixels
-    indexes = np.where(np.all(ann == coord[0], axis=2))
+    #indexes = np.where(np.all(ann == coord[0], axis=2))
+    indexes = np.where(np.all(ann == center, axis=2))
     indexes = list(zip(indexes[0], indexes[1]))
     indexes = list(map(convert_2d_to_1d, indexes))
 
     for i in indexes:
+      #print(i)
+      #i = 256*256 - i
+      #print(256*256 - i)
       list(grid.data.polygons)[i].select = True
       
   conn.close()
@@ -65,6 +75,7 @@ def loop(grid, MAP, tree, ann):
 def convert_2d_to_1d(pt, W=256):
   # convert a 2d point to a flatten index
   return pt[0]*W + pt[1]
+
 
 # args
 """
@@ -78,7 +89,7 @@ conf = {s.split(" ")[0]:s.split(" ")[1:] for s in argv}
 
 obj_name,img_path,mesh_path = conf['args']
 
-bpy.ops.wm.open_mainfile(filepath="match_tool_model.blend")
+bpy.ops.wm.open_mainfile(filepath="match_tool_model.blend1")
 
 # load data
 grid = bpy.data.objects['Grid']
@@ -90,7 +101,7 @@ obj = bpy.data.objects[obj_name]
 
 # place object in the side of the grid
 obj.location.x = -3.80
-obj.rotation_euler.x = radians(180)
+obj.rotation_euler.x = radians(0)
 obj.rotation_euler.y = radians(0)
 obj.rotation_euler.z = radians(0)
 
@@ -105,14 +116,13 @@ tree =  KDTree(centers, leaf_size=2)
 inf = Inference(obj_name)
 
 inf.load_image_mesh(img_path=img_path, mesh_path=mesh_path)
-image_matrix, color_matrix = inf.inference()
+image_matrix, color_matrix, raw_matrix = inf.inference()
 # save both matrixes in /tmp
 #np.save("/tmp/tmp_image_matrix.npy", image_matrix)
+np.save("/tmp/tmp_image_matrix.npy", raw_matrix.cpu().detach().numpy())
 Image.fromarray(np.uint8(color_matrix)).save("/tmp/tmp_color_matrix.png")
 
-if 1 == 1:
-
-  # ----------------
-  bpy.context.view_layer.objects.active = obj
-  t1 = threading.Thread(target=loop, args=(grid,MAP,tree,image_matrix))
-  t1.start()
+# ----------------
+bpy.context.view_layer.objects.active = obj
+t1 = threading.Thread(target=loop, args=(grid,MAP,tree,image_matrix))
+t1.start()
