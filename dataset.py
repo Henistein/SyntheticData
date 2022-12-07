@@ -7,6 +7,11 @@ import torchvision.transforms as transforms
 import numpy as np
 from PIL import Image
 from random import shuffle
+from pytorch3d.structures import Meshes
+from pytorch3d.io import load_obj
+
+import warnings
+warnings.filterwarnings("ignore")
 
 class Dataset:
   def __init__(self, train_amt=0.8, data_path=None):
@@ -60,7 +65,7 @@ class MyDataset(data.Dataset):
   
   def __getitem__(self, index):
     img_path = self.data['images'][index]
-    mesh_path = glob.glob(img_path.rsplit('/', 2)[0]+"/mesh/*")[0]
+    mesh_path = glob.glob(img_path.rsplit('/', 2)[0]+"/mesh/*.obj")[0]
     img_path = img_path.rsplit('/', 1)[0] + '/' + img_path.rsplit('/', 1)[1].split('_')[1]
     ann_path = self.data['annotations'][index]
     ann_path = ann_path.rsplit('/', 1)[0] + '/' + ann_path.rsplit('/', 1)[1].split('_')[1]
@@ -74,17 +79,35 @@ class MyDataset(data.Dataset):
     ann = torch.tensor(np.load(ann_path))
 
     # load mesh
-    mesh = torch.tensor(np.load(mesh_path)).permute(1, 0)
+    #mesh = torch.tensor(np.load(mesh_path)).permute(1, 0)
+    verts, faces, _ = load_obj(mesh_path)
 
 
-    return (img,mesh,ann)
+    return (img,(verts, faces),ann)
+
+def collate_fn(batch):
+  imgs, meshes, anns = list(zip(*batch))
+  all_verts, all_faces = list(zip(*meshes))
+
+  # use pytorch3d to stack meshes with different size
+  all_verts = list(all_verts)
+  all_faces = list(map(lambda x: x.verts_idx, all_faces))
+  # create batch with meshes
+  batch_meshes = Meshes(verts=all_verts, faces=all_faces).verts_padded()
+
+  # stack imgs and anns
+  imgs = torch.stack(imgs)
+  anns = torch.stack(anns)
+
+  return (imgs,batch_meshes,anns)
+
 
 def load_dataloaders(bs):
-  dataset = Dataset(data_path='/home/socialab/Desktop/Henrique/DATA_MNIST')
+  dataset = Dataset(data_path='/home/socialab/Desktop/Henrique/DATA')
   train_dataset, val_dataset = dataset()
 
-  return data.DataLoader(train_dataset, batch_size=bs, collate_fn=None, shuffle=True), \
-         data.DataLoader(val_dataset, batch_size=bs, collate_fn=None, shuffle=True)
+  return data.DataLoader(train_dataset, batch_size=bs, collate_fn=collate_fn, shuffle=True), \
+         data.DataLoader(val_dataset, batch_size=bs, collate_fn=collate_fn, shuffle=True)
 
 
 from tqdm import tqdm
