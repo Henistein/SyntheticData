@@ -174,10 +174,10 @@ class CreateData(DataGen):
       big_img = Image.fromarray(np.uint8(C))
       big_img.save('big_matrix.PNG')
 
-      little_img = Image.fromarray(np.uint8(NEW_C))
-      little_img.save('little_matrix.PNG')
+      #little_img = Image.fromarray(np.uint8(NEW_C))
+      #little_img.save('little_matrix.PNG')
 
-      return NEW_M, big_img, little_img
+      return NEW_M, big_img, None
 
     return (NEW_M,None,None)
 
@@ -238,7 +238,6 @@ class CreateData(DataGen):
     self.blender.context.scene.render.resolution_x = self.res[0]
     self.blender.context.scene.render.resolution_y = self.res[1]
 
-    return self.create_annotations(obj, output_img=debug)
   
   def save_generated_data(self, path):
     with open(path, 'wb') as f:

@@ -202,9 +202,13 @@ def get_polygon_indexes(coords):
 def centroid(vertexes):
   x_list = [vertex[0] for vertex in vertexes]
   y_list = [vertex[1] for vertex in vertexes]
-  z_list = [vertex[2] for vertex in vertexes]
+  if len(vertexes[0]) == 3:
+    z_list = [vertex[2] for vertex in vertexes]
   _len = len(vertexes)
   x = sum(x_list) / _len
   y = sum(y_list) / _len
-  z = sum(z_list) / _len
-  return(x, y, z)
+  if len(vertexes[0]) == 3:
+    z = sum(z_list) / _len
+    return (x, y, z)
+  else:
+    return (x, y)

@@ -1,7 +1,9 @@
 import bpy
+import bmesh
 import sys
 import os
 import pickle
+import cv2
 import numpy as np
 
 sys.path.insert(1, '/home/socialab/Henrique/SyntheticData/data_gen')
@@ -12,6 +14,8 @@ if blend_dir not in sys.path:
 
 import scripts
 from scripts import *
+from match import get_coordinates_matches
+from mathutils import Vector
 import data_gen
 #importlib.reload(scripts)
 #importlib.reload(data_gen)
@@ -72,33 +76,87 @@ def init(obj_name):
   return obj, node_environment
 
 
+def load_data_from_pkl(path):
+  path = '../data_gen/pkls/' + path
+  # load data
+  with open(path, 'rb') as f:
+    data = pickle.load(f)
 
-# parse args
-argv = " ".join(sys.argv).replace(" -- ", "++").split("++")[1:]
-conf = {s.split(" ")[0]:s.split(" ")[1:] for s in argv}
+  for i in range(len(data)):
+    data[i][-1] = "../data_gen/" + data[i][-1]
+  
+  return data
 
-obj_name,img_path,mesh_path = conf['args']
+def get_faces_pixels(obj):
+  # visible mesh
+  new_plane = cut_obj_camera_view(bpy, bpy.data.objects['Plane'], obj)
+  visible_faces = get_visible_mesh(bpy, new_plane, obj, visualize=True)
 
-# load data
-with open('../data_gen/pkls/data_10.pkl', 'rb') as f:
-  data = pickle.load(f)
+  faces_pixels = get_coordinates_matches(
+    visible_faces,
+    bpy.data.objects['Camera'],
+    bpy.context.scene
+  )
 
-for i in range(len(data)):
-  data[i][-1] = "../data_gen/" + data[i][-1]
-  print(data[i])
+  return faces_pixels
 
-# load sample from data
-sample = data[1]
+def get_centroids_from_faces(faces_pixels):
+  centroids = []
+  for _,co_2d in faces_pixels:
+    #co_2d = [tuple(obj.matrix_world @ Vector((co[0], co[1], 1))) for co in co_2d]
+    aux_co = []
+    for co in co_2d:
+      co = (co[0], abs(1080-1-co[1]))
+      aux_co.append(co)
+    #print(aux_co)
+    centroids.append(list(map(int, centroid(aux_co))))
+  
+  return centroids
 
-# import object
-obj, node_environment = init(obj_name)
+def debug_show_image_with_points(points):
+  img = cv2.imread('img.png')
 
-dg = data_gen.CreateData(bpy, res=(256, 256), redux_factor=1, destination_path=None, debug=False, generated_data=[sample])
-dg.add_obj('empty', bpy.data.objects['Empty'])
-dg.add_obj('obj', obj)
-dg.add_obj('node_environment', node_environment)
-dg.feat_name = ['empty,constraints,Follow Path,offset', 'empty,constraints,Follow Path,influence', 'obj.location.x', 'obj.location.y', 'obj.location.z', 'obj.rotation_euler.x', 'obj.rotation_euler.y', 'obj.rotation_euler.z', 'node_environment.image']
-dg.create_random_sample(obj, debug=False, already_gen=True)
+  # Loop through the points and draw them on the image
+  for point in points:
+      cv2.circle(img, tuple(point), 5, (0, 0, 255, 1), -1)
+
+  # Show the image
+  cv2.imshow('image', img)
+  cv2.waitKey(0)
+  cv2.destroyAllWindows()
 
 
-print(sample)
+if __name__ == '__main__':
+  # parse args
+  argv = " ".join(sys.argv).replace(" -- ", "++").split("++")[1:]
+  conf = {s.split(" ")[0]:s.split(" ")[1:] for s in argv}
+
+  obj_name,img_path,mesh_path = conf['args']
+
+  # load data
+  data = load_data_from_pkl('data_10.pkl')
+  sample = data[1]
+
+  # import object
+  obj, node_environment = init(obj_name)
+
+  # create datagen
+  dg = data_gen.CreateData(bpy, res=(256, 256), redux_factor=1, destination_path=None, debug=False, generated_data=[sample])
+  dg.add_obj('empty', bpy.data.objects['Empty'])
+  dg.add_obj('obj', obj)
+  dg.add_obj('node_environment', node_environment)
+  dg.feat_name = ['empty,constraints,Follow Path,offset', 'empty,constraints,Follow Path,influence', 'obj.location.x', 'obj.location.y', 'obj.location.z', 'obj.rotation_euler.x', 'obj.rotation_euler.y', 'obj.rotation_euler.z', 'node_environment.image']
+  dg.create_random_sample(obj, debug=False, already_gen=True)
+
+  # set resolution to (1080, 1080)
+  bpy.context.scene.render.resolution_x = 1080 
+  bpy.context.scene.render.resolution_y = 1080
+
+  # extract the coordinates of each face in 2d image coordinates
+  faces_pixels = get_faces_pixels(obj)
+
+  # convert get the centroids of faces in 2d image coordinates
+  centroids = get_centroids_from_faces(faces_pixels)
+
+  debug_show_image_with_points(centroids)
+  #print(centroids)
