@@ -219,10 +219,10 @@ class CreateData(DataGen):
       # save coordinates matches in npy format
       np.save(self.destination_path+f"/annotations/a{index}.npy", annotations)
 
-  def create_random_sample(self, obj, debug=False):
+  def create_random_sample(self, obj, debug=False, already_gen=False):
     data = choice(self.generated_data)
     for ft_n, value in enumerate(data):
-      feature = self.feature_names[ft_n]
+      feature = self.feat_name[ft_n] if already_gen else self.feature_names[ft_n]
       if '.' in feature:
         if feature == 'node_environment.image':
           value = self.blender.data.images.load(value)

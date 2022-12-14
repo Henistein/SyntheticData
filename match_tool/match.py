@@ -65,9 +65,6 @@ def loop(grid, MAP, tree, ann):
     indexes = list(map(convert_2d_to_1d, indexes))
 
     for i in indexes:
-      #print(i)
-      #i = 256*256 - i
-      #print(256*256 - i)
       list(grid.data.polygons)[i].select = True
       
   conn.close()
