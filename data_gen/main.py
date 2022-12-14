@@ -114,12 +114,12 @@ if __name__ == '__main__':
     # offset
     dg.add_feature("constraints,Follow Path,offset", 0, 120, 5)
     # influence
-    dg.add_feature("constraints,Follow Path,influence", 0.65, 1.0, 0.05)
+    dg.add_feature("constraints,Follow Path,influence", 0.35, 0.55, 0.02) # zoom
 
     # add obj
     dg.add_obj('obj', obj)
     # location
-    dg.add_feature("location.x", -5, 0, 1)
+    dg.add_feature("location.x", 0, 0.1, 0.1)
     dg.add_feature("location.y", 0, 10, 2)
     dg.add_feature("location.z", 0, 5, 1)
 
@@ -135,7 +135,7 @@ if __name__ == '__main__':
     # Generate and create data
     dg.generate(33000)
 
-    dg.save_generated_data(f'pkls/gen_data_7.pkl')
+    dg.save_generated_data(f'pkls/gen_data_2.pkl')
     #dg.create_data(obj, debug=False)
     #dg.create_random_sample(obj, debug=True)
 

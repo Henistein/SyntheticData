@@ -11,9 +11,9 @@ parser, unknown = parser.parse_known_args()
 name = parser.name
 obj_name = parser.obj_name
 
-name = '000001' 
-obj_name = '000001' 
-save_path = '/media/socialab/53523fbd-9f42-4704-95e6-cbd31933c196/MNIST_TEST/000001/mesh'
+name = 'banco_2K' 
+obj_name = 'banco_2K' 
+save_path = '/media/socialab/53523fbd-9f42-4704-95e6-cbd31933c196/DATA/banco_2K/mesh'
 
 
 bpy.ops.import_scene.obj(filepath=f"models/{name}.obj")

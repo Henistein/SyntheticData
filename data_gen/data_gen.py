@@ -139,7 +139,7 @@ class CreateData(DataGen):
       color = np.random.randint(0, 255, size=(3,)).tolist()
       for i,j in indices:
         if not ((0 <= i < self.res[0]) and (0 <= j < self.res[1])):
-          print(f'Skiped index ({i},{j}')
+          #print(f'Skiped index ({i},{j}')
           continue
 
         j = abs(self.res[1]-1-j)
