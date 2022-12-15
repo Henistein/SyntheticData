@@ -91,7 +91,7 @@ class Inference:
         if image_matrix[i, j, 0] != 0:
           color_matrix[i, j] = map_colors[tuple(image_matrix[i, j])]
 
-    return image_matrix, color_matrix
+    return (image_matrix, all_coordinates), color_matrix
 
 if __name__ == '__main__':
   # args
