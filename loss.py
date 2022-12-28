@@ -13,8 +13,8 @@ class ComputeLoss(nn.Module):
     self.mse = nn.MSELoss()
   
   def forward(self, preds=None, target=None):
-    obj = target[..., 0] == 1
-    noobj = target[..., 0] == 0
+    obj = target[..., 0] >= 0.5
+    noobj = target[..., 0] < 0.5
 
     # NoObject Loss
     noobj_loss = self.bcel(
