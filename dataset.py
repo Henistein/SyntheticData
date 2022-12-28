@@ -1,4 +1,3 @@
-# create a pytorch dataset
 import torch
 import glob
 import yaml
@@ -65,10 +64,10 @@ class MyDataset(data.Dataset):
   
   def __getitem__(self, index):
     img_path = self.data['images'][index]
-    mesh_path = glob.glob(img_path.rsplit('/', 2)[0]+"/mesh/*.obj")[0]
-    img_path = img_path.rsplit('/', 1)[0] + '/' + img_path.rsplit('/', 1)[1].split('_')[1]
+    mesh_path = glob.glob(img_path.rsplit('/', 2)[0]+"/mesh/*.npy")[0]        
+    img_path = img_path.rsplit('/', 1)[0] + '/' + img_path.rsplit('/', 1)[1].split('_')[-1] 
     ann_path = self.data['annotations'][index]
-    ann_path = ann_path.rsplit('/', 1)[0] + '/' + ann_path.rsplit('/', 1)[1].split('_')[1]
+    ann_path = ann_path.rsplit('/', 1)[0] + '/' + ann_path.rsplit('/', 1)[1].split('_')[-1]
 
     # load image
     img = Image.open(img_path).convert('RGB')
@@ -79,11 +78,26 @@ class MyDataset(data.Dataset):
     ann = torch.tensor(np.load(ann_path))
 
     # load mesh
-    #mesh = torch.tensor(np.load(mesh_path)).permute(1, 0)
-    verts, faces, _ = load_obj(mesh_path)
+    mesh = torch.tensor(np.load(mesh_path)).permute(1, 0)
+    #verts, faces, _ = load_obj(mesh_path)
 
 
-    return (img,(verts, faces),ann)
+    return (img,mesh,ann)
+
+def collate_fn(batch):                                                   
+  imgs, meshes, anns = list(zip(*batch))                                      
+  #all_verts, all_faces = list(zip(*meshes))
+  #all_verts = list(all_verts)                                            
+  #all_faces = list(map(lambda x: x.verts_idx, all_faces))            
+  # create batch with meshes                                                 
+  #batch_meshes = Meshes(verts=all_verts, faces=all_faces).verts_padded()  
+                                                                                          
+  # stack imgs and anns                                                       
+  imgs = torch.stack(imgs)                                                                  
+  meshes = torch.stack(meshes)                                       
+  anns = torch.stack(anns)                                                                
+                                                                                           
+  return (imgs,meshes,anns)
 
 def collate_fn(batch):
   imgs, meshes, anns = list(zip(*batch))
@@ -100,6 +114,24 @@ def collate_fn(batch):
   anns = torch.stack(anns)
 
   return (imgs,batch_meshes,anns)
+
+
+def collate_fn(batch):
+  imgs, meshes, anns = list(zip(*batch))
+  #all_verts, all_faces = list(zip(*meshes))
+
+  # use pytorch3d to stack meshes with different size
+  #all_verts = list(all_verts)
+  #all_faces = list(map(lambda x: x.verts_idx, all_faces))
+  # create batch with meshes
+  #batch_meshes = Meshes(verts=all_verts, faces=all_faces).verts_padded()
+
+  # stack imgs and anns
+  imgs = torch.stack(imgs)
+  meshes = torch.stack(meshes)
+  anns = torch.stack(anns)
+
+  return (imgs,meshes,anns)
 
 
 def load_dataloaders(bs):

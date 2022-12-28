@@ -12,13 +12,13 @@ from loss import ComputeLoss
 
 class Train:
   EPOCHS = 50
-  LEARNING_RATE = 1e-5
+  LEARNING_RATE = 1e-4
 
   def __init__(self, train_dataset, val_dataset, weights):
     # load model
     self.model = Net()
     self.model.cuda()
-    self.model= nn.DataParallel(self.model, device_ids=[0,2,3])
+    self.model= nn.DataParallel(self.model, device_ids=[0,2])
     self.model.load_state_dict(torch.load(weights), strict=False) if weights else self.model
     # dataset 
     self.train_dataset = train_dataset
@@ -39,8 +39,6 @@ class Train:
       imgs = imgs.cuda().float()
       meshes = meshes.cuda().float().permute(0, 2, 1)
       anns = anns.cuda().float()
-
-      self.optimizer.zero_grad()
 
       with torch.cuda.amp.autocast(enabled=False):
         # Forward pass
@@ -64,13 +62,11 @@ class Train:
   def _validate(self):
     self.model.eval()
     val_loss, val_acc = [], []
-    with torch.no_grad():
+    with torch.cuda.amp.autocast(enabled=False):
       for (imgs, meshes, anns) in (t:=tqdm(self.val_dataset)):
           imgs = imgs.cuda().float()
           meshes = meshes.cuda().float().permute(0, 2, 1)
           anns = anns.cuda().float()
-
-          self.optimizer.zero_grad()
 
           # Forward pass
           outputs = self.model(meshes, imgs)
@@ -108,6 +104,7 @@ class Train:
       if best_loss is None or epoch_loss < best_loss:
         # save the best model
         torch.save(self.model.state_dict(), path+"/best.pt")
+        best_loss = epoch_loss
       # save the last model 
       torch.save(self.model.state_dict(), path+"/last.pt")
       # save stats
