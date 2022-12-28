@@ -65,7 +65,7 @@ class Train:
     with torch.cuda.amp.autocast(enabled=False):
       for (imgs, meshes, anns) in (t:=tqdm(self.val_dataset)):
           imgs = imgs.cuda().float()
-          meshes = meshes.cuda().float().permute(0, 2, 1)
+          meshes = meshes.cuda().float()
           anns = anns.cuda().float()
 
           # Forward pass
