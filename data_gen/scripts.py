@@ -73,7 +73,7 @@ def cut_obj_camera_view(bpy, plane, obj):
 
   return new_plane
 
-def get_visible_mesh(bpy, plane, obj, visualize=False):
+def get_visible_mesh(bpy, plane, obj, visualize=False, get_indexes=False):
   m_1 = plane.matrix_world.copy()
   mesh_1_verts = [m_1 @ vertex.co for vertex in plane.data.vertices]
   mesh_1_polys = [polygon.vertices for polygon in plane.data.polygons]
@@ -108,20 +108,24 @@ def get_visible_mesh(bpy, plane, obj, visualize=False):
   """
 
   # faces
-  ret = []
+  #ret = []
+  ret = {}
   for face in obj.data.polygons:
     if face.index in mesh_2_polys_ints:
       aux = []
       for v in face.vertices:
         if visualize: obj.data.vertices[v].select = True
         aux.append(tuple(obj.matrix_world @ obj.data.vertices[v].co))
-      ret.append(aux)
+      #ret.append(aux)
+      ret[face.index] = aux
   # remove plane
   #bpy.context.view_layer.objects.active = plane
   bpy.data.objects['Plane.001'].select_set(True)
   bpy.ops.object.delete()
 
-  return ret
+  if get_indexes:
+    return ret
+  return list(ret.values())
 
 
 def create_background():
