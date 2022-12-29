@@ -6,7 +6,7 @@ import pickle
 import cv2
 import numpy as np
 
-sys.path.insert(1, '/home/socialab/Henrique/SyntheticData/data_gen')
+sys.path.insert(1, '../data_gen')
 
 blend_dir = os.path.dirname(bpy.data.filepath)
 if blend_dir not in sys.path:

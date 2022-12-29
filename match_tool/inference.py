@@ -19,6 +19,7 @@ from model.model import Net
 from sklearn.neighbors import KDTree
 
 class Inference:
+  THRESHOLD = 0.5
   def __init__(self, obj_name, match_tool=False):
     self.dists = []
     self.obj_name = obj_name
@@ -39,6 +40,7 @@ class Inference:
     self.model.eval()
     # Transform
     self.transform = transforms.Compose([
+      transforms.Resize((256,256)),
       transforms.ToTensor(),
       transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
@@ -73,7 +75,7 @@ class Inference:
     output = output.cpu().detach().numpy()[0]
 
     # create image matrix
-    idx1, idx2 = np.where(output[..., 0]>0)
+    idx1, idx2 = np.where(output[..., 0]>=Inference.THRESHOLD)
     image_matrix[idx1, idx2, ...] = output[idx1, idx2, ...]
     image_matrix[idx1, idx2, ...] = np.array(list(map(self.query_row_to_center, image_matrix[idx1, idx2, ...])))
 
