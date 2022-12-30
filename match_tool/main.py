@@ -213,6 +213,10 @@ if __name__ == '__main__':
 
   #pred_image = Image.fromarray(np.uint8(color_matrix)).convert('RGB')
   pred_image = np.uint8(color_matrix)
+
+  points = list(all_different_positions.keys())
+
+
   #pred_image = np.uint8(color_matrix)
   #pred_image = cv2.cvtColor(pred_image, cv2.COLOR_RGB2BGR)
   gt_image = cv2.imread('img.png')
@@ -222,6 +226,7 @@ if __name__ == '__main__':
   #exit()
   gt_image = cv2.cvtColor(np.uint8(gt_image), cv2.COLOR_RGBA2RGB)
   result = cv2.hconcat([gt_image, pred_image])
+
   
   for co in all_different_positions.keys():
     # get coord from index co
@@ -235,7 +240,7 @@ if __name__ == '__main__':
     face = MAP[center]
     if face.index in index_centroid.keys():
       orig = index_centroid[face.index]
-      dest = (co[1]*(900//256)+900, co[0]*(900//256))
+      dest = ((co[1]*900)//256+900, (co[0]*900)//256)
       cv2.line(result, orig, dest, all_different_positions[co], 3)
     
 
