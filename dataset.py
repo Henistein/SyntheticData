@@ -4,10 +4,12 @@ import yaml
 import torch.utils.data as data
 import torchvision.transforms as transforms
 import numpy as np
+import re
+import os
 from PIL import Image
 from random import shuffle
-from pytorch3d.structures import Meshes
-from pytorch3d.io import load_obj
+#from pytorch3d.structures import Meshes
+#from pytorch3d.io import load_obj
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -15,37 +17,32 @@ warnings.filterwarnings("ignore")
 class Dataset:
   def __init__(self, train_amt=0.8, data_path=None):
     self.DATA = {}
-    images = []
-    annotations = []
+    images = {}
+    annotations = {}
     for path in list(glob.glob(data_path+"/*")):
       name = path.split('/')[-1]
-
       for img in list(glob.glob(path+"/images/*")):
-        p1, p2 = img.rsplit('/', 1)
-        images.append(p1 + '/' + name+"_"+p2)
+        p1, p2 = img.rsplit('/', 1) # p1: path/images p2: img{index}.png
+        index = p2.split('.')[0].replace('img', '')
+        images[name+index] = p1 + '/' + name+"_"+p2 # path/images/name_img{index}.png
       for ann in list(glob.glob(path+"/annotations/*")):
-        p1, p2 = ann.rsplit('/', 1)
-        annotations.append(p1 + '/' + name+"_"+p2)
+        p1, p2 = ann.rsplit('/', 1) # p1: path/annotations p2: a{index}.npy
+        index = p2.split('.')[0].replace('a', '')
+        annotations[name+index] = p1 + '/' + name+"_"+p2 # path/annotations/name_a{index}.npy
 
-    images = sorted(images)
-    annotations = sorted(annotations)
+    self.data = []
+    for key in images.keys():
+      if key in annotations.keys():
+        self.data.append((images[key], annotations[key]))
 
-    temp = list(zip(images, annotations))
-    shuffle(temp)
-    images, annotations = zip(*temp)
+    # shuffle data
+    shuffle(self.data) 
 
-    assert len(images) == len(annotations), "Images and annotations differ in size"
+    self.train_data = self.data[:int(0.8*len(self.data))]
+    self.test_data = self.data[int(0.8*len(self.data)):]
 
+    assert (len(self.train_data) + len(self.test_data)) == len(self.data), "len(Train+Test) <> len(data)"
 
-    self.train_data = {}
-    self.train_data['images'] = images[:int(train_amt*len(images))]
-    self.train_data['annotations'] = annotations[:int(train_amt*len(annotations))]
-
-    self.test_data = {}
-    self.test_data['images'] = images[int(train_amt*len(images)):]
-    self.test_data['annotations'] = annotations[int(train_amt*len(annotations)):]
-
-    assert len(self.train_data['images']) > len(self.test_data['images']), "Test images size greater than train images size"
 
   def __call__(self):
     return MyDataset(self.train_data), MyDataset(self.test_data)
@@ -60,14 +57,20 @@ class MyDataset(data.Dataset):
     ])
   
   def __len__(self):
-    return len(self.data["images"])
-  
+    return len(self.data)
   def __getitem__(self, index):
-    img_path = self.data['images'][index]
-    mesh_path = glob.glob(img_path.rsplit('/', 2)[0]+"/mesh/*.npy")[0]        
-    img_path = img_path.rsplit('/', 1)[0] + '/' + img_path.rsplit('/', 1)[1].split('_')[-1] 
-    ann_path = self.data['annotations'][index]
-    ann_path = ann_path.rsplit('/', 1)[0] + '/' + ann_path.rsplit('/', 1)[1].split('_')[-1]
+    _img_path, _ann_path = self.data[index]
+    name = _img_path.rsplit('/', 2)[0]
+    assert name == _ann_path.rsplit('/', 2)[0], "Different names in ann and image path"
+    # load mesh path from name
+    mesh_path = glob.glob(name+"/mesh/*.npy")[0]        
+
+    # change img and ann path string to match to the real one
+    img_path = _img_path.rsplit('/', 1)[0] + '/' + _img_path.rsplit('/', 1)[1].split('_')[-1] 
+    ann_path = _ann_path.rsplit('/', 1)[0] + '/' + _ann_path.rsplit('/', 1)[1].split('_')[-1]
+
+    # Very important assert
+    assert int(_img_path.rsplit('_')[-1].split('.')[0].replace('img', '')) == int(_ann_path.rsplit('_')[-1].split('.')[0].replace('a', '')), "Different match between image and ann: " + _img_path + " " + _ann_path
 
     # load image
     img = Image.open(img_path).convert('RGB')
@@ -79,7 +82,6 @@ class MyDataset(data.Dataset):
 
     # load mesh
     mesh = torch.tensor(np.load(mesh_path)).permute(1, 0)
-    #verts, faces, _ = load_obj(mesh_path)
 
 
     return (img,mesh,ann)
@@ -135,7 +137,7 @@ def collate_fn(batch):
 
 
 def load_dataloaders(bs):
-  dataset = Dataset(data_path='/home/socialab/Desktop/Henrique/DATA')
+  dataset = Dataset(data_path='/media/socialab/53523fbd-9f42-4704-95e6-cbd31933c196/DATA')
   train_dataset, val_dataset = dataset()
 
   return data.DataLoader(train_dataset, batch_size=bs, collate_fn=collate_fn, shuffle=True), \
@@ -149,16 +151,5 @@ if __name__ == '__main__':
 
   #for (img,mesh,ann) in tqdm(train_loader):
   for data in tqdm(train_loader):
-    for d in data:
-      imgs, meshes, anns = list(zip(*d))
+    pass
 
-      imgs = torch.stack(imgs)
-      meshes = torch.stack(meshes)
-      anns = torch.stack(anns)
-
-      print(imgs.shape)
-      print(meshes.shape)
-      print(anns.shape)
-      print()
-
-    break
