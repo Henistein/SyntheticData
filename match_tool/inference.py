@@ -19,7 +19,7 @@ from model.model import Net
 from sklearn.neighbors import KDTree
 
 class Inference:
-  THRESHOLD = 0.5
+  THRESHOLD = 0.9
   def __init__(self, obj_name, match_tool=False):
     self.dists = []
     self.obj_name = obj_name
@@ -31,7 +31,7 @@ class Inference:
     # pass centers to kdtree
     self.tree =  KDTree(self.centers, leaf_size=2)
     # load weights
-    weights = torch.load('weights/best.pt')
+    weights = torch.load('weights/mnist_weights.pt', map_location='cuda:0')
     # load model
     self.model = Net()
     self.model.cuda()

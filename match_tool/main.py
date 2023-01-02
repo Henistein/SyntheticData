@@ -229,6 +229,15 @@ if __name__ == '__main__':
 
   
   for co in all_different_positions.keys():
+    """
+    Draw red pred points on pred image
+    """
+    pt = ((co[1]*900)//256, (co[0]*900)//256)
+    cv2.circle(pred_image, pt, 5, (255, 0, 0, 1), -1)
+
+    """
+    Draw the most closest matching points on the original image
+    """
     # get coord from index co
     coord = image_matrix[co[0], co[1], 1:]
     # query coord
@@ -238,16 +247,14 @@ if __name__ == '__main__':
     center = tuple(centers[ind].flatten())
     # select face
     face = MAP[center]
+
     if face.index in index_centroid.keys():
       orig = index_centroid[face.index]
-      dest = ((co[1]*900)//256+900, (co[0]*900)//256)
-      cv2.line(result, orig, dest, all_different_positions[co], 3)
+      #dest = ((co[1]*900)//256+900, (co[0]*900)//256)
+      #cv2.line(result, orig, dest, all_different_positions[co], 1)
+      cv2.circle(pred_image, orig, 5, (0, 255, 0, 1), -1)
     
-
-
-    #print(face.index)
-    #exit()
-  Image.fromarray(result).show()
+  Image.fromarray(pred_image).show()
 
   #print(len(all_different_positions))
   #print(len(all_coordinates))
