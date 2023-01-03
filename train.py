@@ -8,7 +8,9 @@ import numpy as np
 from tqdm import tqdm 
 from dataset import load_dataloaders
 from model.model import Net
-from loss import ComputeLoss
+from loss import ComputeLoss, dice_loss
+
+torch.cuda.set_device(2)
 
 class Train:
   EPOCHS = 50
@@ -18,14 +20,15 @@ class Train:
     # load model
     self.model = Net()
     self.model.cuda()
-    self.model= nn.DataParallel(self.model, device_ids=[0,2])
+    self.model= nn.DataParallel(self.model, device_ids=[2,3])
     self.model.load_state_dict(torch.load(weights), strict=False) if weights else self.model
     # dataset 
     self.train_dataset = train_dataset
     self.val_dataset = val_dataset 
     # params
-    self.optimizer = optim.Adam(self.model.parameters(), lr=Train.LEARNING_RATE, weight_decay=1e-8)
-    self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', patience=2)
+    #self.optimizer = optim.Adam(self.model.parameters(), lr=Train.LEARNING_RATE, weight_decay=1e-8)
+    self.optimizer = optim.RMSprop(self.model.parameters(), lr=Train.LEARNING_RATE, weight_decay=1e-8, momentum=0.9)
+    self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'max', patience=2)
     self.grad_scaler = torch.cuda.amp.GradScaler(enabled=False)
     self.criterion = ComputeLoss()
   
@@ -45,6 +48,7 @@ class Train:
         outputs = self.model(meshes, imgs)
         # Compute loss
         loss = self.criterion(preds=outputs, target=anns)
+        loss += dice_loss(F.sigmoid(outputs[..., 0]), anns[..., 0], multiclass=False)
 
       # save train loss
       train_loss.append(loss.item())
@@ -73,6 +77,7 @@ class Train:
 
           # Compute loss
           loss = self.criterion(preds=outputs, target=anns)
+          loss += dice_loss(F.sigmoid(outputs[..., 0]), anns[..., 0], multiclass=False)
 
           val_loss.append(loss.item())
 
