@@ -19,7 +19,7 @@ from model.model import Net
 from sklearn.neighbors import KDTree
 
 class Inference:
-  THRESHOLD = 0.9
+  THRESHOLD = 0.5
   def __init__(self, obj_name, match_tool=False):
     self.dists = []
     self.obj_name = obj_name
@@ -56,6 +56,7 @@ class Inference:
   def inference(self):
     # inference
     output = self.model(self.mesh, self.img)
+    output[..., 0:1] = torch.sigmoid(output[..., 0:1])
     return *self.output_to_image(output), output.squeeze(0)
     #Image.fromarray(np.uint8(image)).show()
 

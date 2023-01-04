@@ -15,7 +15,7 @@ class Net(nn.Module):
     self.out_conv = nn.Sequential(
         nn.Conv2d(64, 4, 1),
         #nn.ReLU(),
-        nn.BatchNorm2d(4)
+        #nn.BatchNorm2d(4)
     )
 
 
@@ -45,8 +45,8 @@ class Net(nn.Module):
 
     # conv output (BS, 256, 256, 4)
     out = self.out_conv(out)
-    out[:, 0:1, :, :] = torch.sigmoid(out[:, 0:1, :, :])
-    out[:, 1:4, :, :] = torch.relu(out[:, 1:4, :, :])
+    #out[:, 0:1, :, :] = torch.sigmoid(out[:, 0:1, :, :])
+    #out[:, 1:4, :, :] = torch.relu(out[:, 1:4, :, :])
     out = out.permute(0, 2, 3, 1)
 
     return out

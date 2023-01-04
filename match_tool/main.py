@@ -140,7 +140,7 @@ if __name__ == '__main__':
 
   # load data
   data = load_data_from_pkl('data_10.pkl')
-  sample = data[1]
+  sample = data[0]
 
   # import object
   obj, node_environment = init(obj_name)
@@ -250,11 +250,12 @@ if __name__ == '__main__':
 
     if face.index in index_centroid.keys():
       orig = index_centroid[face.index]
-      #dest = ((co[1]*900)//256+900, (co[0]*900)//256)
-      #cv2.line(result, orig, dest, all_different_positions[co], 1)
+      dest = ((co[1]*900)//256+900, (co[0]*900)//256)
+      cv2.line(result, orig, dest, all_different_positions[co], 1)
       cv2.circle(pred_image, orig, 5, (0, 255, 0, 1), -1)
     
   Image.fromarray(pred_image).show()
+  Image.fromarray(result).show()
 
   #print(len(all_different_positions))
   #print(len(all_coordinates))

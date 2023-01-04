@@ -22,4 +22,4 @@ obj = bpy.data.objects[obj_name]
 vertices = np.array([list(v.co) for v in obj.data.vertices])
 
 # save vertices
-np.save(f"{save_path}/{name}_mesh.npy", vertices)
+np.save(f"{name}_mesh.npy", vertices)
